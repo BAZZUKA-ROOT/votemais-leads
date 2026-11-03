@@ -122,7 +122,7 @@ export function WhatsAppComposer({ leadId, open, onOpenChange, kind = 'initial' 
             <span>{text.length} caracteres</span>
             <span>A mensagem é aberta no WhatsApp para você revisar e enviar. Nada é enviado automaticamente.</span>
           </div>
-          {aiPending && <PendingIntegration what="IA (Anthropic) não configurada — escreva a mensagem manualmente ou configure a chave." />}
+          {aiPending && <PendingIntegration what="nenhum modo de geração ativo — ative o modo regras (gratuito), o Ollama ou a Anthropic, ou escreva manualmente." />}
           <div className="flex flex-wrap justify-end gap-2 pt-1">
             <Button variant="outline" onClick={() => generate.mutate()} loading={generate.isPending}>
               {msgId ? <RefreshCw /> : <Sparkles />} {msgId ? 'Regenerar' : 'Gerar com IA'}

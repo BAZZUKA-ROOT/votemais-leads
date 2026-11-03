@@ -104,13 +104,13 @@ export async function leadRoutes(app: FastifyInstance) {
   app.post('/api/leads/:id/messages', async (req) => {
     const { id } = parse(idParam, req.params);
     const body = parse(z.object({ kind: z.enum(['initial', 'followup']).default('initial') }), req.body ?? {});
-    if (!(await isAiReady())) throw new IntegrationUnavailableError('anthropic', 'Configure a integração de IA (Anthropic) para gerar mensagens.');
+    if (!(await isAiReady())) throw new IntegrationUnavailableError('anthropic', 'Ative um modo de geração em Integrações (regras gratuito, Ollama ou Anthropic).');
     return generateMessage(id, body.kind);
   });
 
   app.post('/api/leads/:id/analyze', async (req) => {
     const { id } = parse(idParam, req.params);
-    if (!(await isAiReady())) throw new IntegrationUnavailableError('anthropic', 'Configure a integração de IA (Anthropic) para analisar leads.');
+    if (!(await isAiReady())) throw new IntegrationUnavailableError('anthropic', 'Ative um modo de análise em Integrações (regras gratuito, Ollama ou Anthropic).');
     return analyzeLead(id);
   });
 

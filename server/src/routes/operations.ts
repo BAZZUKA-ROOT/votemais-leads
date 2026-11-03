@@ -2,7 +2,7 @@ import { and, desc, eq, gte, ilike, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { idParam, parse, requireAdmin, userId } from '../api/plugins.js';
-import { isAiReady, testAnthropic } from '../ai/client.js';
+import { aiMode, isAiReady, testAnthropic, testOllama } from '../ai/client.js';
 import { db, pool } from '../db/client.js';
 import { searchJobs, searchQueries, searchResults, suppressionList, systemLogs, users } from '../db/schema.js';
 import { badRequest, IntegrationUnavailableError, notFound } from '../lib/errors.js';
@@ -40,6 +40,10 @@ async function testProvider(provider: ProviderId) {
       await c.search('concurso rainha do rodeio', { count: 3, integration: { ...integ, ready: true } });
     } else if (provider === 'anthropic') {
       await testAnthropic();
+    } else if (provider === 'ollama') {
+      await testOllama();
+    } else if (provider === 'rules') {
+      // sem dependência externa
     } else if (provider === 'brasilapi') {
       const res = await fetch(`${String(integ.config.baseUrl ?? 'https://brasilapi.com.br')}/api/cnpj/v1/00000000000191`, { signal: AbortSignal.timeout(15_000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -81,7 +85,9 @@ export async function systemHealth() {
   } catch (err) {
     out.worker = { ok: false, detail: errMsg(err) };
   }
-  out.ai = { ok: await isAiReady(), detail: (await isAiReady()) ? undefined : 'Integração Anthropic pendente' };
+  const mode = await aiMode();
+  const LABEL = { anthropic: 'Anthropic Claude', ollama: 'Ollama (local)', rules: 'modo regras (sem IA)' } as const;
+  out.ai = { ok: mode !== null, detail: mode ? `ativo: ${LABEL[mode]}` : 'Nenhum modo de análise ativo (Anthropic, Ollama ou regras)' };
   return out;
 }
 

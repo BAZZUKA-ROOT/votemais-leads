@@ -2,7 +2,8 @@ import { z } from 'zod';
 import type { ContactCandidate, ExtractedPage } from '../extraction/extract.js';
 import { appearsIn, domainOf, eventBaseName, normalizeInstagram, normalizeText } from '../lib/normalize.js';
 import { toUf } from '../lib/regions.js';
-import { aiCall } from './client.js';
+import { aiCall, aiMode } from './client.js';
+import { rulesExtract, RULES_MODEL } from './rules.js';
 
 const fact = z.enum(['confirmed', 'unconfirmed', 'not_found']);
 
@@ -209,6 +210,10 @@ export function groundExtraction(out: ExtractionOutput, input: ExtractionInput):
 }
 
 export async function runExtraction(input: ExtractionInput, jobId?: string | null) {
+  if ((await aiMode()) === 'rules') {
+    const data = extractionSchema.parse(rulesExtract(input));
+    return { data, model: RULES_MODEL, inputTokens: 0, outputTokens: 0, costUsd: 0, grounded: groundExtraction(data, input) };
+  }
   const res = await aiCall({ purpose: 'extraction', system: SYSTEM, user: buildExtractionPrompt(input), schema: extractionSchema, maxTokens: 6000, jobId });
   return { ...res, grounded: groundExtraction(res.data, input) };
 }

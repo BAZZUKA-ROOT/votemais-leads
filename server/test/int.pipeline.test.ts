@@ -86,6 +86,7 @@ describe('pipeline de descoberta', () => {
   });
 
   it('sem IA configurada: resultado fica aguardando, sem simular análise', async () => {
+    await saveIntegration('rules', { enabled: false });
     await useStubSearch(() => [HIT]);
     useStubPages({ [EVENT_URL]: EVENT_PAGE });
     const job = await createSearchJob({ type: 'manual', queries: [{ query: 'rainha expo goiás', origin: 'manual', categoryId: 12, state: 'GO' }] });

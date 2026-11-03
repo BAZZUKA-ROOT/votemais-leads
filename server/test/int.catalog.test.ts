@@ -81,6 +81,6 @@ describe('catálogo: eventos, organizadores, categorias, campanhas', () => {
     }
     const integ = await c.get('/api/integrations');
     expect(integ.body.system.database.ok).toBe(true);
-    expect(integ.body.integrations).toHaveLength(8);
+    expect(integ.body.integrations).toHaveLength(10);
   });
 });

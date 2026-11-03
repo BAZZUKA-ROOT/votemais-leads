@@ -226,7 +226,7 @@ export default function SearchPage() {
   const control = useQuery({ queryKey: ['control'], queryFn: () => api.get<Control>('/control'), refetchInterval: 30_000 });
   const integ = useQuery({ queryKey: ['integrations'], queryFn: () => api.get<{ integrations: Array<{ kind: string; status: string; enabled: boolean; provider: string }> }>('/integrations') });
   const searchReady = integ.data?.integrations.some((i) => i.kind === 'search' && i.enabled && i.status !== 'not_configured');
-  const aiReady = integ.data?.integrations.some((i) => i.provider === 'anthropic' && i.enabled && i.status !== 'not_configured');
+  const aiReady = integ.data?.integrations.some((i) => i.kind === 'ai' && i.enabled && i.status !== 'not_configured');
 
   const inv = () => {
     qc.invalidateQueries({ queryKey: ['search-jobs'] });
@@ -249,7 +249,7 @@ export default function SearchPage() {
       />
       <div className="mb-4 space-y-2">
         {integ.isSuccess && !searchReady && <PendingIntegration what="nenhum provedor de pesquisa configurado (SearXNG, Brave, Serper, Tavily ou Google)." />}
-        {integ.isSuccess && !aiReady && <PendingIntegration what="IA (Anthropic) não configurada — resultados ficam aguardando análise e nenhum lead é criado sem ela." />}
+        {integ.isSuccess && !aiReady && <PendingIntegration what="nenhum modo de análise ativo (Anthropic, Ollama ou modo regras gratuito) — resultados ficam aguardando." />}
         {(control.data?.results.awaitingAi ?? 0) > 0 && (
           <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 text-xs">
             <span className="flex-1">

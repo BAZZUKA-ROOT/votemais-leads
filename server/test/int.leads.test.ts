@@ -4,6 +4,7 @@ import type { ExtractionOutput, GroundedExtraction } from '../src/ai/extraction.
 import { db } from '../src/db/client.js';
 import { contactHistory, contacts, events, followUps, generatedMessages, leads, suppressionList } from '../src/db/schema.js';
 import { persistDiscovery } from '../src/services/discovery.js';
+import { saveIntegration } from '../src/services/integrations.js';
 import { login, type Client } from './api-client.js';
 import { createAdmin, resetDb } from './helpers.js';
 
@@ -183,11 +184,13 @@ describe('gestão de leads, filtros, pipeline e WhatsApp', () => {
     const r = await c.send('POST', '/api/leads/bulk', { ids: [leadA, leadB], action: 'stage', stage: 'sem_interesse' });
     expect(r.body.affected).toBe(2);
     expect((await c.get('/api/leads?stage=sem_interesse')).body.total).toBe(2);
+    await saveIntegration('rules', { enabled: false });
     expect((await c.send('POST', '/api/leads/bulk', { ids: [leadA], action: 'analyze' })).status).toBe(503);
     expect((await c.send('POST', '/api/leads/bulk', { ids: [leadA], action: 'delete' })).body.affected).toBe(1);
   });
 
   it('gerar mensagem sem IA configurada informa pendência (não simula)', async () => {
+    await saveIntegration('rules', { enabled: false });
     const r = await c.send('POST', `/api/leads/${leadA}/messages`, { kind: 'initial' });
     expect(r.status).toBe(503);
     expect(r.body.error).toBe('integration_unavailable');

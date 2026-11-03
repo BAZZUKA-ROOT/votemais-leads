@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { aiCall, isAiReady } from '../ai/client.js';
+import { aiCall, aiMode, isAiReady } from '../ai/client.js';
 import { db } from '../db/client.js';
 import {
   contactHistory,
@@ -46,7 +46,9 @@ export async function refreshEvents(): Promise<{ checked: number; cancelled: num
   let newContacts = 0;
   const nextEdition: Array<{ query: string; categoryId: number | null; state: string | null }> = [];
   const year = new Date().getFullYear();
-  const aiReady = await isAiReady();
+  // confirmação de cancelamento exige um LLM (no modo regras, nenhum evento é marcado como cancelado)
+  const mode = await aiMode();
+  const llmReady = mode === 'anthropic' || mode === 'ollama';
 
   for (const ev of batch) {
     try {
@@ -80,7 +82,7 @@ export async function refreshEvents(): Promise<{ checked: number; cancelled: num
               .returning({ inserted: sql<boolean>`(xmax = 0)` });
             if (res[0]?.inserted) newContacts++;
           }
-          if (aiReady && /cancelad|adiad|suspens/i.test(page.text)) {
+          if (llmReady && /cancelad|adiad|suspens/i.test(page.text)) {
             const r = await aiCall({
               purpose: 'refresh',
               system: 'Responda se o texto afirma explicitamente que o evento indicado foi CANCELADO (não apenas adiado). Copie em evidence o trecho literal. Não suponha.',

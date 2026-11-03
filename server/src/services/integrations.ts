@@ -12,6 +12,8 @@ export type ProviderId =
   | 'google_cse'
   | 'tavily'
   | 'anthropic'
+  | 'ollama'
+  | 'rules'
   | 'brasilapi'
   | 'n8n';
 
@@ -118,6 +120,29 @@ export const PROVIDERS: ProviderDef[] = [
     pricingNote: 'Custo calculado por tokens (tabela oficial por modelo). Haiku 5.5 reduz o custo em ~40x.',
   },
   {
+    id: 'ollama',
+    kind: 'ai',
+    label: 'Ollama (IA local gratuita)',
+    description: 'Modelo open-source rodando na sua máquina/VPS. Sem custo por uso. Recomendado: qwen2.5:7b (≈8 GB de RAM) ou llama3.1:8b.',
+    docsUrl: 'https://github.com/ollama/ollama/blob/main/docs/api.md',
+    fields: [
+      { key: 'baseUrl', label: 'URL do Ollama', secret: false, required: true, type: 'url', placeholder: 'http://ollama:11434' },
+      { key: 'model', label: 'Modelo', secret: false, required: true, placeholder: 'qwen2.5:7b' },
+    ],
+    defaultConfig: { baseUrl: 'http://ollama:11434', model: 'qwen2.5:7b' },
+    pricingNote: 'Gratuito (usa CPU/RAM do servidor). Mais lento que APIs pagas.',
+  },
+  {
+    id: 'rules',
+    kind: 'ai',
+    label: 'Modo regras (sem IA, gratuito)',
+    description: 'Extração, classificação e mensagens por regras determinísticas a partir do texto das fontes. Usado quando nenhuma IA está configurada.',
+    docsUrl: 'https://leads.votemais.online/integrations',
+    fields: [],
+    defaultConfig: {},
+    pricingNote: 'Gratuito. Menos preciso que IA para identificar nomes e organizadores.',
+  },
+  {
     id: 'brasilapi',
     kind: 'enrichment',
     label: 'BrasilAPI — CNPJ',
@@ -148,7 +173,7 @@ export async function ensureIntegrationRows() {
   for (const p of PROVIDERS) {
     await db
       .insert(integrations)
-      .values({ provider: p.id, kind: p.kind, config: p.defaultConfig, enabled: p.id === 'brasilapi', status: p.fields.some((f) => f.required) ? 'not_configured' : 'configured' })
+      .values({ provider: p.id, kind: p.kind, config: p.defaultConfig, enabled: p.id === 'brasilapi' || p.id === 'rules', status: p.fields.some((f) => f.required) ? 'not_configured' : 'configured' })
       .onConflictDoNothing();
   }
 }

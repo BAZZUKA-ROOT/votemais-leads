@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { aiCall } from './client.js';
+import { aiCall, aiMode } from './client.js';
+import { rulesMessage, RULES_MODEL } from './rules.js';
 
 export const messageSchema = z.object({
   message: z.string(),
@@ -68,7 +69,13 @@ export function validateMessage(text: string, i: MessageInput): string | null {
   return null;
 }
 
-export async function runMessageGeneration(input: MessageInput) {
+export async function runMessageGeneration(input: MessageInput, variant = 0) {
+  if ((await aiMode()) === 'rules') {
+    const data = rulesMessage(input, variant);
+    const problem = validateMessage(data.message, input);
+    if (problem) throw new Error(`Modelo de mensagem inválido: ${problem}`);
+    return { data, model: RULES_MODEL, inputTokens: 0, outputTokens: 0, costUsd: 0 };
+  }
   let lastProblem = '';
   for (let attempt = 0; attempt < 2; attempt++) {
     const user = buildMessagePrompt(input) + (lastProblem ? `\n\nA versão anterior foi rejeitada (${lastProblem}). Corrija.` : '');

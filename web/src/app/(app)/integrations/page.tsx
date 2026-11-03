@@ -46,7 +46,7 @@ const STATUS: Record<Integration['status'], { label: string; v: 'neutral' | 'inf
   connected: { label: 'Conectada', v: 'success', icon: CheckCircle2 },
   error: { label: 'Erro', v: 'danger', icon: XCircle },
 };
-const KIND: Record<string, string> = { search: 'Provedores de pesquisa', ai: 'Inteligência artificial', enrichment: 'Enriquecimento de dados', automation: 'Automação' };
+const KIND: Record<string, string> = { search: 'Provedores de pesquisa', ai: 'Análise e mensagens (prioridade: Anthropic → Ollama → regras)', enrichment: 'Enriquecimento de dados', automation: 'Automação' };
 
 function IntegrationCard({ it }: { it: Integration }) {
   const qc = useQueryClient();

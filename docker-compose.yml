@@ -42,6 +42,13 @@ services:
       SEARXNG_BASE_URL: http://searxng:8080/
     volumes: ["./deploy/searxng/settings.yml:/etc/searxng/settings.yml:ro"]
 
+  # IA local gratuita (opcional). Após subir: docker compose exec ollama ollama pull qwen2.5:7b
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    profiles: ["ollama"]
+    volumes: [ollamadata:/root/.ollama]
+
   migrate:
     <<: *server
     restart: "no"
@@ -50,7 +57,14 @@ services:
   api:
     <<: *server
     depends_on:
-      migrate: { condition: service_completed_successfully }
+      # IA local gratuita (opcional). Após subir: docker compose exec ollama ollama pull qwen2.5:7b
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    profiles: ["ollama"]
+    volumes: [ollamadata:/root/.ollama]
+
+  migrate: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/api/health"]
       interval: 15s
@@ -61,7 +75,14 @@ services:
     command: ["node", "dist/workers/main.js"]
     stop_grace_period: 60s
     depends_on:
-      migrate: { condition: service_completed_successfully }
+      # IA local gratuita (opcional). Após subir: docker compose exec ollama ollama pull qwen2.5:7b
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    profiles: ["ollama"]
+    volumes: [ollamadata:/root/.ollama]
+
+  migrate: { condition: service_completed_successfully }
 
   web:
     image: votemais-leads-web:latest
@@ -87,3 +108,4 @@ volumes:
   redisdata:
   caddydata:
   caddyconfig:
+  ollamadata:

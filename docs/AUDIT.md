@@ -7,7 +7,7 @@ Data: 03/11/2026. Verificação feita por: testes automatizados, typecheck, buil
 | Verificação | Status |
 | --- | --- |
 | `pnpm -r typecheck` (server + web) | ✅ sem erros |
-| `pnpm --filter server test` — 10 arquivos, 70 testes | ✅ todos passando |
+| `pnpm --filter server test` — 11 arquivos, 76 testes | ✅ todos passando |
 | `pnpm --filter web build` — 18 rotas | ✅ |
 | Bundle de produção do server (`pnpm deploy`) + migrations + API em `NODE_ENV=production` | ✅ |
 | 17 páginas do painel sem erros de console/página | ✅ |
@@ -44,7 +44,8 @@ Data: 03/11/2026. Verificação feita por: testes automatizados, typecheck, buil
 
 ## Limitações conhecidas e decisões
 
-- **Sem IA configurada não há criação de leads**: por regra do projeto (não simular IA), resultados ficam "Aguardando IA" e podem ser reprocessados depois.
+- **Modo gratuito**: sem IA paga, o motor de regras (padrão) ou o Ollama processam os resultados; tudo é identificado como `regras`/`ollama:<modelo>` nas análises. Se todos os modos forem desativados, os resultados ficam "Aguardando IA".
+- **Modo regras** é menos preciso que IA para nomes de organizadores e não infere cancelamentos.
 - **Conteúdo da página enviado à IA** é limitado a ~18 mil caracteres por página para controlar custo; páginas maiores têm o final ignorado.
 - **Sites que exigem JavaScript** para exibir conteúdo são lidos apenas pelo HTML inicial (sem navegador headless), e o título/trecho do resultado de busca continua sendo usado.
 - **Instagram**: somente dados presentes no resultado público de busca (perfil, título, trecho). Números publicados apenas dentro do Instagram não são coletados.

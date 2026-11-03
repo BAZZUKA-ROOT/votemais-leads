@@ -1,5 +1,7 @@
 import { and, desc, eq, or, sql } from 'drizzle-orm';
+import { aiMode } from '../ai/client.js';
 import { runClassification } from '../ai/classification.js';
+import { rulesClassify, RULES_MODEL } from '../ai/rules.js';
 import { APPROACHES, runMessageGeneration } from '../ai/messages.js';
 import { db } from '../db/client.js';
 import {
@@ -113,7 +115,30 @@ export async function analyzeLead(leadId: string, jobId?: string | null) {
   const settings = await getSettings();
   const checklist = buildChecklist(b.ev, b.org, b.list);
   const dataQuality = computeDataQuality(b.ev, b.org, b.list, b.sources.length);
-  const res = await runClassification(buildDossier(b, checklist), jobId);
+  const res =
+    (await aiMode()) === 'rules'
+      ? {
+          data: rulesClassify({
+            eventName: b.ev.name,
+            checklist,
+            hasPopularVoting: b.ev.hasPopularVoting,
+            hasContest: b.ev.hasContest,
+            hasParticipants: b.ev.hasParticipants,
+            registrationOpen: b.ev.registrationOpen,
+            isFuture: b.ev.startDate ? b.ev.startDate >= new Date().toISOString().slice(0, 10) : b.ev.year ? b.ev.year >= new Date().getFullYear() : null,
+            isPast: b.ev.status === 'past',
+            organizerKnown: !!b.org,
+            organizerRecurring: !!b.org?.isRecurring,
+            hasWhatsapp: b.list.some((c) => c.type === 'whatsapp'),
+            hasAnyContact: b.list.some((c) => c.isCommercial && ['whatsapp', 'phone', 'email'].includes(c.type)),
+            hasInstagram: b.list.some((c) => c.type === 'instagram') || !!b.ev.instagramHandle,
+          }),
+          model: RULES_MODEL,
+          inputTokens: 0,
+          outputTokens: 0,
+          costUsd: 0,
+        }
+      : await runClassification(buildDossier(b, checklist), jobId);
   const c = res.data;
   const qualified = c.score >= settings.minQualifiedScore;
 
@@ -207,7 +232,8 @@ export async function generateMessage(leadId: string, kind: 'initial' | 'followu
     .limit(1);
   const [{ n } = { n: 0 }] = await db.select({ n: sql<number>`count(*)::int` }).from(generatedMessages).where(eq(generatedMessages.leadId, leadId));
   const approach = APPROACHES[(n + leadId.charCodeAt(0)) % APPROACHES.length]!;
-  const res = await runMessageGeneration({
+  const res = await runMessageGeneration(
+    {
     eventName: b.ev.name,
     city: b.ev.city,
     state: b.ev.state,
@@ -219,7 +245,9 @@ export async function generateMessage(leadId: string, kind: 'initial' | 'followu
     approach,
     previousMessage: kind === 'followup' ? (prev?.editedContent ?? prev?.content ?? null) : null,
     daysSinceContact: b.lead.lastContactAt ? Math.round((Date.now() - b.lead.lastContactAt.getTime()) / 86400_000) : null,
-  });
+    },
+    n + leadId.charCodeAt(0),
+  );
   const [msg] = await db
     .insert(generatedMessages)
     .values({ leadId, channel: 'whatsapp', kind, approach: res.data.approach || approach, content: res.data.message, model: res.model })

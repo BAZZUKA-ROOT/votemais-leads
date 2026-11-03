@@ -2,12 +2,14 @@
 
 Todas as integrações estão implementadas. O que falta é **você fornecer as credenciais** na tela **Integrações** (as chaves são cifradas com AES-256-GCM no backend, nunca retornam ao navegador — apenas `••••1234`). Ao salvar com a integração ativa, o sistema executa um teste real e mostra o status: *Pendente*, *Configurada*, *Conectada* ou *Erro*.
 
-Sem provedor de pesquisa, o planejador registra "nenhum provedor configurado" e não executa. Sem IA, os resultados ficam em **Aguardando IA** (nenhum lead é criado sem análise) e podem ser reprocessados depois em **Pesquisas → Reprocessar**.
+Sem provedor de pesquisa, o planejador registra "nenhum provedor configurado" e não executa. Se você desativar todos os modos de análise (inclusive o modo regras), os resultados ficam em **Aguardando IA** (nenhum lead é criado sem análise) e podem ser reprocessados depois em **Pesquisas → Reprocessar**.
 
-## Mínimo para operar
+## Mínimo para operar (grátis)
 
-1. **Um provedor de pesquisa** (recomendado: SearXNG self-hosted + Brave ou Serper como fallback).
-2. **Anthropic** (IA).
+1. **SearXNG** (self-hosted) como provedor de pesquisa.
+2. **Modo regras** (já ativo) — ou **Ollama** para IA local gratuita. Veja [FREE.md](FREE.md).
+
+Anthropic e as APIs de busca pagas são opcionais. Prioridade de análise: Anthropic → Ollama → regras.
 
 ## Provedores de pesquisa
 
@@ -52,6 +54,16 @@ Não há integração com a API do Instagram. O sistema usa apenas **resultados 
 - Custo de referência (US$ por 1M tokens, entrada/saída): Opus 5.5 4/20 · Sonnet 5.5 2/10 · **Haiku 5.5 0,10/0,50**. Para reduzir custo em volume, use Haiku 5.5 para extração e mensagens; o consumo real aparece em **Consumo e custos** (custo por lead qualificado).
 - As requisições usam saída estruturada (JSON validado por Zod) e o fallback de recusa do próprio servidor (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`). Recusas são registradas e não geram dados.
 - O teste de conexão consulta o modelo configurado (`models.retrieve`).
+
+## IA local gratuita — Ollama
+
+- Sem credencial. URL (`http://ollama:11434` no compose com `--profile ollama`) e modelo (`qwen2.5:7b` recomendado; `llama3.1:8b` alternativa).
+- Baixe o modelo antes: `docker compose exec ollama ollama pull qwen2.5:7b`. O botão **Testar** verifica se o modelo está disponível.
+- Usa saída estruturada (JSON Schema) e a mesma validação factual. Consumo registrado com custo zero.
+
+## Modo regras (sem IA)
+
+- Ativo por padrão, sem configuração. Detalhes e limitações em [FREE.md](FREE.md).
 
 ## Enriquecimento — BrasilAPI (CNPJ)
 
