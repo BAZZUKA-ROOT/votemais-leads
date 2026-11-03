@@ -286,6 +286,8 @@ export async function persistDiscovery(g: GroundedExtraction, ctx: DiscoveryCont
       const v = k === 'name' ? ev.name : (ev as Record<string, unknown>)[k];
       if (v) fieldSources[k] = ctx.url;
     }
+    if (g.website) fieldSources.website = ctx.url;
+    if (g.instagram) fieldSources.instagram = ctx.url;
 
     let eventId: string;
     let created = false;

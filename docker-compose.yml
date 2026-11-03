@@ -1,0 +1,89 @@
+name: votemais-leads
+
+x-server: &server
+  image: votemais-leads-server:latest
+  build: { context: ., dockerfile: server/Dockerfile }
+  env_file: .env
+  restart: unless-stopped
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+
+  searxng:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    profiles: ["searxng"]
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET}
+      SEARXNG_BASE_URL: http://searxng:8080/
+    volumes: ["./deploy/searxng/settings.yml:/etc/searxng/settings.yml:ro"]
+
+  migrate:
+    <<: *server
+    restart: "no"
+    command: ["sh", "-c", "node dist/db/migrate.js && node dist/db/seed.js"]
+
+  api:
+    <<: *server
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/api/health"]
+      interval: 15s
+      retries: 5
+
+  worker:
+    <<: *server
+    command: ["node", "dist/workers/main.js"]
+    stop_grace_period: 60s
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    image: votemais-leads-web:latest
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args: { API_INTERNAL_URL: "http://api:4000" }
+    restart: unless-stopped
+    depends_on: [api]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on: [web, api]
+
+volumes:
+  pgdata:
+  redisdata:
+  caddydata:
+  caddyconfig:

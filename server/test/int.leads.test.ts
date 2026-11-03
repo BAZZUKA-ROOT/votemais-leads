@@ -55,6 +55,9 @@ describe('gestão de leads, filtros, pipeline e WhatsApp', () => {
     expect((await c.get('/api/leads?q=jaguari')).body.total).toBe(1);
     expect((await c.get('/api/leads?eventFrom=2027-01-01&eventTo=2027-12-31')).body.total).toBe(3);
     expect((await c.get('/api/leads?categoryId=9')).body.total).toBe(3);
+    expect((await c.get('/api/leads?year=2027')).body.total).toBe(3);
+    expect((await c.get('/api/leads?year=2026')).body.total).toBe(0);
+    expect((await c.get('/api/leads?organizerType=produtora')).body.total).toBe(1);
     const sorted = await c.get('/api/leads?sort=score&dir=desc');
     expect(sorted.body.items[0].id).toBe(leadA);
     const paged = await c.get('/api/leads?pageSize=2&page=2');
@@ -188,5 +191,17 @@ describe('gestão de leads, filtros, pipeline e WhatsApp', () => {
     const r = await c.send('POST', `/api/leads/${leadA}/messages`, { kind: 'initial' });
     expect(r.status).toBe(503);
     expect(r.body.error).toBe('integration_unavailable');
+  });
+});
+
+describe('validação de URLs (XSS)', () => {
+  it('rejeita esquemas não http(s) em campos de URL', async () => {
+    await resetDb();
+    await createAdmin();
+    const c = await login();
+    const { leadId } = await persistDiscovery(grounded('Rainha do Rodeio de Teste 2027', 'SP', { phone: '5511987654321' }), ctx('https://t.com.br'));
+    expect((await c.send('PATCH', `/api/leads/${leadId}`, { event: { website: 'javascript:alert(1)' } })).status).toBe(400);
+    expect((await c.send('POST', `/api/leads/${leadId}/contacts`, { type: 'email', value: 'a@b.com.br', sourceUrl: 'javascript:alert(1)' })).status).toBe(400);
+    expect((await c.send('PATCH', `/api/leads/${leadId}`, { event: { website: 'https://ok.com.br' } })).status).toBe(200);
   });
 });

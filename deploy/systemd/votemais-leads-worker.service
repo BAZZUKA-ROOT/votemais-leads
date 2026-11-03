@@ -1,0 +1,20 @@
+# Instalação sem Docker: código em /opt/votemais-leads, usuário "vml".
+[Unit]
+Description=VoteMais Leads Workers (BullMQ)
+After=network.target postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=vml
+WorkingDirectory=/opt/votemais-leads/server
+EnvironmentFile=/opt/votemais-leads/.env
+ExecStart=/usr/bin/node dist/workers/main.js
+Restart=always
+TimeoutStopSec=90
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

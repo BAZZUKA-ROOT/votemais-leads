@@ -1,0 +1,20 @@
+# SearXNG interno (acessível apenas pela rede do docker compose).
+# Revise os engines habilitados conforme os termos de uso de cada mecanismo.
+use_default_settings: true
+general:
+  instance_name: "VoteMais Leads Search"
+search:
+  safe_search: 0
+  default_lang: "pt-BR"
+  formats:
+    - html
+    - json
+server:
+  # definido via variável SEARXNG_SECRET
+  secret_key: "change-me-via-env"
+  limiter: false
+  image_proxy: false
+  public_instance: false
+outgoing:
+  request_timeout: 6.0
+  max_request_timeout: 12.0

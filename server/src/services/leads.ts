@@ -231,7 +231,7 @@ export const leadUpdateSchema = z
         startDate: dateStr.nullable(),
         endDate: dateStr.nullable(),
         categoryId: z.number().int().nullable(),
-        website: z.string().url().max(500).nullable(),
+        website: z.string().url().max(500).regex(/^https?:\/\//i, 'Use http(s)').nullable(),
         instagramHandle: z.string().max(60).nullable(),
         status: z.enum(['scheduled', 'ongoing', 'past', 'cancelled', 'unknown']),
         hasPopularVoting: z.enum(['confirmed', 'unconfirmed', 'not_found', 'denied']),
@@ -313,7 +313,7 @@ export const contactInputSchema = z.object({
   type: z.enum(['whatsapp', 'phone', 'email', 'instagram', 'website', 'facebook']),
   value: z.string().min(3).max(300),
   label: z.string().max(100).nullable().optional(),
-  sourceUrl: z.string().max(500).optional(),
+  sourceUrl: z.string().url().max(500).regex(/^https?:\/\//i, 'Use http(s)').optional(),
   isCommercial: z.boolean().default(true),
 });
 

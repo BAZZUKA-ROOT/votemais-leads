@@ -1,0 +1,19 @@
+# Instalação sem Docker: código em /opt/votemais-leads, usuário "vml".
+[Unit]
+Description=VoteMais Leads API
+After=network.target postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=vml
+WorkingDirectory=/opt/votemais-leads/server
+EnvironmentFile=/opt/votemais-leads/.env
+ExecStart=/usr/bin/node dist/api/server.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

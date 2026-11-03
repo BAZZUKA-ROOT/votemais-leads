@@ -77,7 +77,7 @@ export async function catalogRoutes(app: FastifyInstance) {
         organizerName: organizers.name,
         categoryName: categories.name,
         leadId: leads.id,
-        sources: sql<number>`(select count(*) from lead_sources ls where ls.event_id = ${events.id})::int`,
+        sources: sql<number>`(select count(*) from lead_sources ls where ls.event_id = "events"."id")::int`,
       })
       .from(events)
       .leftJoin(organizers, eq(organizers.id, events.organizerId))
@@ -123,7 +123,7 @@ export async function catalogRoutes(app: FastifyInstance) {
         isRecurring: organizers.isRecurring,
         eventsCount: organizers.eventsCount,
         createdAt: organizers.createdAt,
-        contactsCount: sql<number>`(select count(*) from contacts c where c.organizer_id = ${organizers.id})::int`,
+        contactsCount: sql<number>`(select count(*) from contacts c where c.organizer_id = "organizers"."id")::int`,
       })
       .from(organizers)
       .where(where)
@@ -185,7 +185,7 @@ export async function catalogRoutes(app: FastifyInstance) {
         negativeKeywords: categories.negativeKeywords,
         priority: categories.priority,
         isActive: categories.isActive,
-        leads: sql<number>`(select count(*) from leads l where l.category_id = ${categories.id})::int`,
+        leads: sql<number>`(select count(*) from leads l where l.category_id = "categories"."id")::int`,
       })
       .from(categories)
       .orderBy(asc(categories.group), desc(categories.priority), asc(categories.name)),
@@ -230,8 +230,8 @@ export async function catalogRoutes(app: FastifyInstance) {
         isActive: campaigns.isActive,
         startsAt: campaigns.startsAt,
         endsAt: campaigns.endsAt,
-        leads: sql<number>`(select count(*) from leads l where l.campaign_id = ${campaigns.id})::int`,
-        converted: sql<number>`(select count(*) from leads l where l.campaign_id = ${campaigns.id} and l.stage = 'cliente')::int`,
+        leads: sql<number>`(select count(*) from leads l where l.campaign_id = "campaigns"."id")::int`,
+        converted: sql<number>`(select count(*) from leads l where l.campaign_id = "campaigns"."id" and l.stage = 'cliente')::int`,
       })
       .from(campaigns)
       .orderBy(desc(campaigns.createdAt)),

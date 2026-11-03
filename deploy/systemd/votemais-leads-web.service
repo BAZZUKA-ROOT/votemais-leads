@@ -1,0 +1,16 @@
+[Unit]
+Description=VoteMais Leads Web (Next.js)
+After=network.target votemais-leads-api.service
+
+[Service]
+Type=simple
+User=vml
+WorkingDirectory=/opt/votemais-leads/web/.next/standalone
+Environment=NODE_ENV=production PORT=3000 HOSTNAME=127.0.0.1
+ExecStart=/usr/bin/node web/server.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

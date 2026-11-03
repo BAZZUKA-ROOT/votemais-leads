@@ -315,6 +315,7 @@ export async function processResult(resultId: string): Promise<{ outcome: string
     ? await db.select({ name: events.name, city: events.city, state: events.state, year: events.year }).from(events).where(eq(events.id, r.contextEventId))
     : [];
   const [q] = r.queryId ? await db.select().from(searchQueries).where(eq(searchQueries.id, r.queryId)) : [];
+  const [jobRow] = r.jobId ? await db.select({ campaignId: searchJobs.campaignId }).from(searchJobs).where(eq(searchJobs.id, r.jobId)) : [];
 
   const input = {
     url: r.url,
@@ -351,7 +352,7 @@ export async function processResult(resultId: string): Promise<{ outcome: string
     searchResultId: r.id,
     fallbackCategoryId: q?.categoryId ?? null,
     contextEventId: r.contextEventId,
-    campaignId: null,
+    campaignId: jobRow?.campaignId ?? null,
     sourceType: classifySource(r.url),
     httpStatus,
     contentHash,
