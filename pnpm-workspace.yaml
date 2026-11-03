@@ -1,0 +1,9 @@
+packages:
+  - server
+  - web
+onlyBuiltDependencies:
+  - "@node-rs/argon2"
+  - esbuild
+  - sharp
+  - msgpackr-extract
+  - unrs-resolver
