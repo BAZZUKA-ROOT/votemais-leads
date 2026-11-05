@@ -1,6 +1,6 @@
 # Colocar no ar grátis — Oracle Cloud Always Free
 
-A Oracle oferece para sempre uma máquina ARM de **4 núcleos e 24 GB de RAM** sem custo ("Always Free"). Sobra recurso para o VoteMais Leads inteiro (e até para o Ollama). Total: ~20 minutos.
+A Oracle oferece para sempre uma máquina ARM de **2 núcleos e 12 GB de RAM** sem custo ("Always Free" — reduzido de 4 núcleos/24 GB em 15/06/2026; confira o limite atual na página da Oracle). Sobra recurso para o VoteMais Leads inteiro (e até para o Ollama). Total: ~20 minutos.
 
 > A conta pede um cartão apenas para verificação de identidade. Recursos marcados *Always Free* não geram cobrança; não faça upgrade para "Pay As You Go" se não quiser risco de cobrança.
 
@@ -15,12 +15,12 @@ A Oracle oferece para sempre uma máquina ARM de **4 núcleos e 24 GB de RAM** s
 1. Menu ☰ → **Compute → Instances → Create instance**.
 2. **Name**: `votemais-leads`.
 3. **Image**: *Change image* → **Ubuntu** → **Canonical Ubuntu 24.04**.
-4. **Shape**: *Change shape* → **Ampere** → **VM.Standard.A1.Flex** → **4 OCPUs** e **24 GB** de memória (aparece o selo *Always Free-eligible*).
+4. **Shape**: *Change shape* → **Ampere** → **VM.Standard.A1.Flex** → **2 OCPUs** e **12 GB** de memória (use o máximo que aparecer com o selo *Always Free-eligible*).
 5. **Networking**: deixe criar a rede padrão e **Assign a public IPv4 address**.
 6. **SSH keys**: **Generate a key pair for me** → baixe a chave privada (`.key`).
 7. **Create**. Anote o **Public IP address**.
 
-> "Out of capacity"? A demanda por ARM grátis é alta. Tente outro *Availability Domain*, tente de novo mais tarde, ou use 2 OCPUs / 12 GB (também grátis e suficiente).
+> "Out of capacity"? A demanda por ARM grátis é alta. Tente outro *Availability Domain*, tente de novo mais tarde, ou tente com 1 OCPU / 6 GB (também grátis e suficiente sem o Ollama).
 
 ## 3. Liberar as portas 80 e 443
 
@@ -48,7 +48,7 @@ curl -fsSL https://raw.githubusercontent.com/BAZZUKA-ROOT/votemais-leads/main/de
 
 Em ~10 minutos ele instala Docker, baixa o projeto, gera todas as senhas, sobe banco, filas, busca (SearXNG), workers, painel e proxy, ativa o modo gratuito e **dispara a primeira rodada de pesquisa**. No final mostra o endereço, o login e a senha.
 
-Com IA local gratuita (Ollama, recomendado na máquina de 24 GB):
+Com IA local gratuita (Ollama; cabe nos 12 GB, mas deixa as análises mais lentas):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BAZZUKA-ROOT/votemais-leads/main/deploy/install.sh | sudo bash -s -- --email voce@votemais.online --ollama
