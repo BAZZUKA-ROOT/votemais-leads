@@ -22,6 +22,13 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
+      - name: Validar docker-compose e instalador
+        run: |
+          cp .env.example .env
+          docker compose config -q
+          docker compose --profile searxng --profile ollama config -q
+          bash -n deploy/install.sh deploy/backup/backup.sh deploy/backup/restore.sh
+          rm .env
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r typecheck
       - run: pnpm --filter server test
