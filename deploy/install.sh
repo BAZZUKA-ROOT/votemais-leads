@@ -20,6 +20,7 @@ OLLAMA=0
 OLLAMA_MODEL="${OLLAMA_MODEL:-qwen2.5:7b}"
 SKIP_DOCKER_INSTALL="${SKIP_DOCKER_INSTALL:-0}"
 SKIP_FIREWALL="${SKIP_FIREWALL:-0}"
+SKIP_BUILD="${SKIP_BUILD:-0}"
 HTTP_PORT="${HTTP_PORT:-80}"
 
 while [ $# -gt 0 ]; do
@@ -155,8 +156,10 @@ if [ "$SKIP_FIREWALL" != "1" ]; then
 fi
 
 # ---------------------------------------------------------------- subir
-log "Construindo imagens (primeira vez leva alguns minutos)"
-docker compose build
+if [ "$SKIP_BUILD" != "1" ]; then
+  log "Construindo imagens (primeira vez leva alguns minutos)"
+  docker compose build
+fi
 log "Subindo serviços"
 docker compose up -d
 
