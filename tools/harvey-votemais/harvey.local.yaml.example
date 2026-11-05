@@ -1,0 +1,66 @@
+# Configuração do Harvey (tools/harvey) para a VoteMais.
+# Uso: cp ../harvey-votemais/harvey.local.yaml.example ../harvey/harvey.local.yaml
+#      cp ../harvey-votemais/product_knowledge.md ../harvey/skills/product_knowledge.md
+# harvey.local.yaml tem prioridade sobre harvey.yaml (fica fora do Git).
+
+persona:
+  name: "Equipe VoteMais"
+  company: "VoteMais"
+  role: "Comercial"
+  email: "contato@SEU-DOMINIO-SECUNDARIO"   # mailbox de prospecção em domínio secundário
+  tone: "cordial, consultivo, direto, em português do Brasil"
+
+product:
+  name: "VoteMais"
+  description: "Plataforma personalizada para concursos e premiações com votação online, ranking em tempo real, pagamentos via PIX e cartão e painel administrativo."
+  pricing: ""            # preencha com o valor oficial; vazio = Harvey não cita preço
+  key_benefits:
+    - "Votação online com página personalizada do concurso"
+    - "Ranking em tempo real"
+    - "Votos pagos via PIX e cartão"
+    - "Painel administrativo para acompanhar tudo"
+  offer:
+    primary: "Plataforma de votação online para o concurso"
+    entry: "Demonstração rápida de como ficaria a votação do evento"
+    goal: "get_reply"
+    booking_method: "ask_preference"
+    meeting_duration: "15 minutos"
+
+icp:
+  industries:
+    - "concurso de beleza"
+    - "rodeio"
+    - "exposição agropecuária"
+    - "festa municipal"
+    - "premiação melhores do ano"
+  titles:
+    - "Organizador"
+    - "Produtor de eventos"
+    - "Coordenador do concurso"
+    - "Diretor"
+    - "Proprietário"
+  geography:
+    - "Brasil"
+
+channels:
+  email:
+    enabled: true
+    provider: "gmail"
+    max_daily_sends: 20
+    require_approval: true     # NUNCA desligar: alinhado à regra "nada é enviado sem revisão"
+    send_to_risky: false
+  linkedin:
+    enabled: false             # automação de LinkedIn viola os termos da plataforma
+
+usage:
+  max_daily_claude_percent: 60
+  heartbeat_interval_minutes: 30
+  quiet_hours:
+    start: "20:00"
+    end: "08:00"
+    timezone: "America/Sao_Paulo"
+
+compliance:
+  opt_out_line: 'Se não fizer sentido para vocês, é só responder "não, obrigado" que não envio mais e-mails.'
+  postal_address: ""          # endereço comercial da VoteMais
+  do_not_contact: []

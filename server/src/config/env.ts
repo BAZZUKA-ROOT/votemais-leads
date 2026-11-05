@@ -24,6 +24,8 @@ const schema = z.object({
     .string()
     .default('VoteMaisLeadsBot/1.0 (+https://leads.votemais.online/bot)'),
   QUEUE_PREFIX: z.string().default('vml'),
+  /** Token de API (Bearer) para automações locais, como a skill /harvey do Claude Code. Vazio = desativado. */
+  VML_API_TOKEN: z.string().min(32).optional().or(z.literal('').transform(() => undefined)),
 });
 
 export type Env = z.infer<typeof schema>;

@@ -7,6 +7,10 @@ Plataforma **interna** de prospecção comercial da VoteMais. Descobre continuam
 >
 > Nenhuma mensagem é enviada automaticamente. O sistema abre o WhatsApp (`wa.me`) com o texto pronto para você revisar e enviar.
 
+## Harvey — agente de vendas
+
+O [Harvey](https://github.com/ethanplusai/harvey) (MIT) vem junto: abra o projeto no Claude Code e use **`/harvey prospectar`**, **`/harvey abordar`**, **`/harvey objecao`**, **`/harvey revisar`**. Ele busca organizadores na web pela sua assinatura do Claude (sem custo de API), envia as fontes para o VoteMais Leads e redige abordagens — nunca envia nada sozinho. Veja [docs/HARVEY.md](docs/HARVEY.md).
+
 ## Fluxo diário
 
 1. Acesse o painel → **Dashboard** / **Leads** (filtro "Qualificados").
@@ -45,6 +49,7 @@ Depois, em **Integrações**, configure ao menos um provedor de pesquisa (SearXN
 - [Arquitetura e estrutura de pastas](docs/ARCHITECTURE.md)
 - [Configuração do ambiente, variáveis, banco, migrations, workers e Redis](docs/SETUP.md)
 - [Operação 100% gratuita](docs/FREE.md)
+- [Harvey: skill /harvey e agente de vendas](docs/HARVEY.md)
 - [Integrações e credenciais](docs/INTEGRATIONS.md)
 - [Deploy na VPS (leads.votemais.online)](docs/DEPLOY.md)
 - [Backup e restauração](docs/BACKUP.md)

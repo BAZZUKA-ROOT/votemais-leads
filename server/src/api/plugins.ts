@@ -3,6 +3,9 @@ import { z, ZodError } from 'zod';
 import { env } from '../config/env.js';
 import { safeEqual } from '../lib/crypto.js';
 import { AppError, forbidden, unauthorized } from '../lib/errors.js';
+import { asc, eq } from 'drizzle-orm';
+import { db } from '../db/client.js';
+import { users } from '../db/schema.js';
 import { resolveSession, type SessionUser } from '../services/auth.js';
 
 export const SESSION_COOKIE = 'vml_session';
@@ -25,6 +28,20 @@ export async function authHook(req: FastifyRequest, _reply: FastifyReply) {
   req.auth = null;
   const path = req.url.split('?')[0]!;
   if (!path.startsWith('/api/') || PUBLIC.has(path)) return;
+  const bearer = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (bearer) {
+    // Token de API: sem cookie, portanto imune a CSRF. Age como o administrador mais antigo ativo.
+    if (!env.VML_API_TOKEN || !safeEqual(bearer, env.VML_API_TOKEN)) throw unauthorized('Token de API inválido');
+    const [admin] = await db
+      .select({ id: users.id, email: users.email, name: users.name, role: users.role })
+      .from(users)
+      .where(eq(users.isActive, true))
+      .orderBy(asc(users.createdAt))
+      .limit(1);
+    if (!admin) throw unauthorized('Nenhum usuário ativo');
+    req.auth = { sessionId: 'api-token', csrfToken: '', user: { ...admin, name: `${admin.name} (API)` } };
+    return;
+  }
   const token = req.cookies[SESSION_COOKIE];
   const session = token ? await resolveSession(token) : null;
   if (!session) throw unauthorized();

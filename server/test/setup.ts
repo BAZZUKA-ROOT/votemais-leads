@@ -5,3 +5,4 @@ process.env.APP_ENCRYPTION_KEY = 'a'.repeat(64);
 process.env.QUEUE_PREFIX = 'vml-test';
 process.env.APP_URL = 'http://localhost:3000';
 process.env.ANALYSIS_DEBOUNCE_MS = '100';
+process.env.VML_API_TOKEN = 'test-token-0123456789-abcdefghijklmnop';
