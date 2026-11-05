@@ -40,6 +40,8 @@ services:
     environment:
       SEARXNG_SECRET: ${SEARXNG_SECRET}
       SEARXNG_BASE_URL: http://searxng:8080/
+      # a rede padrão do Docker não tem IPv6; o padrão "::" faz o SearXNG falhar ao iniciar
+      GRANIAN_HOST: 0.0.0.0
     volumes: ["./deploy/searxng/settings.yml:/etc/searxng/settings.yml:ro"]
 
   # IA local gratuita (opcional). Após subir: docker compose exec ollama ollama pull qwen2.5:7b
@@ -57,14 +59,7 @@ services:
   api:
     <<: *server
     depends_on:
-      # IA local gratuita (opcional). Após subir: docker compose exec ollama ollama pull qwen2.5:7b
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    profiles: ["ollama"]
-    volumes: [ollamadata:/root/.ollama]
-
-  migrate: { condition: service_completed_successfully }
+      migrate: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/api/health"]
       interval: 15s
@@ -75,14 +70,7 @@ services:
     command: ["node", "dist/workers/main.js"]
     stop_grace_period: 60s
     depends_on:
-      # IA local gratuita (opcional). Após subir: docker compose exec ollama ollama pull qwen2.5:7b
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    profiles: ["ollama"]
-    volumes: [ollamadata:/root/.ollama]
-
-  migrate: { condition: service_completed_successfully }
+      migrate: { condition: service_completed_successfully }
 
   web:
     image: votemais-leads-web:latest
@@ -96,9 +84,9 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
-    ports: ["80:80", "443:443"]
+    ports: ["${HTTP_PORT:-80}:80", "${HTTPS_PORT:-443}:443"]
     volumes:
-      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${CADDYFILE:-./deploy/caddy/Caddyfile}:/etc/caddy/Caddyfile:ro
       - caddydata:/data
       - caddyconfig:/config
     depends_on: [web, api]
