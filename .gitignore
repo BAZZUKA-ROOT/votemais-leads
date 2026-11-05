@@ -10,3 +10,4 @@ backups/
 .turbo
 next-env.d.ts
 *.tsbuildinfo
+deploy/caddy/Caddyfile.generated
