@@ -7,6 +7,9 @@ import { badRequest } from '../lib/errors.js';
 import { isAiReady } from '../ai/client.js';
 import { IntegrationUnavailableError } from '../lib/errors.js';
 import { enqueue } from '../queue/queues.js';
+import { validateMessage } from '../ai/messages.js';
+import { db } from '../db/client.js';
+import { contactHistory, generatedMessages } from '../db/schema.js';
 import { analyzeLead, generateMessage } from '../services/analysis.js';
 import {
   addContact,
@@ -103,7 +106,29 @@ export async function leadRoutes(app: FastifyInstance) {
 
   app.post('/api/leads/:id/messages', async (req) => {
     const { id } = parse(idParam, req.params);
-    const body = parse(z.object({ kind: z.enum(['initial', 'followup']).default('initial') }), req.body ?? {});
+    const body = parse(
+      z.object({
+        kind: z.enum(['initial', 'followup']).default('initial'),
+        // texto já redigido (ex.: skill /harvey no Claude Code) — salvo como rascunho, nunca enviado
+        content: z.string().min(20).max(1500).optional(),
+        author: z.string().max(40).default('harvey'),
+      }),
+      req.body ?? {},
+    );
+    if (body.content) {
+      const detail = await getLeadDetail(id);
+      const problem = validateMessage(body.content.trim(), {
+        eventName: detail.event.name, city: detail.event.city, state: detail.event.state, categoryName: null, organizerName: null,
+        confirmedFacts: [], votingConfirmed: detail.event.hasPopularVoting === 'confirmed', kind: body.kind, approach: '',
+      });
+      if (problem && problem !== 'sem link') throw badRequest(`Mensagem rejeitada: ${problem}`);
+      const [msg] = await db
+        .insert(generatedMessages)
+        .values({ leadId: id, kind: body.kind, channel: 'whatsapp', content: body.content.trim(), approach: 'redigida externamente', model: body.author })
+        .returning();
+      await db.insert(contactHistory).values({ leadId: id, userId: userId(req), type: 'message_generated', content: `Mensagem redigida por ${body.author}`, metadata: { messageId: msg!.id } });
+      return msg;
+    }
     if (!(await isAiReady())) throw new IntegrationUnavailableError('anthropic', 'Ative um modo de geração em Integrações (regras gratuito, Ollama ou Anthropic).');
     return generateMessage(id, body.kind);
   });

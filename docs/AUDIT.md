@@ -7,7 +7,7 @@ Data: 03/11/2026. Verificação feita por: testes automatizados, typecheck, buil
 | Verificação | Status |
 | --- | --- |
 | `pnpm -r typecheck` (server + web) | ✅ sem erros |
-| `pnpm --filter server test` — 11 arquivos, 76 testes | ✅ todos passando |
+| `pnpm --filter server test` — 12 arquivos, 79 testes | ✅ todos passando |
 | `pnpm --filter web build` — 18 rotas | ✅ |
 | Bundle de produção do server (`pnpm deploy`) + migrations + API em `NODE_ENV=production` | ✅ |
 | 17 páginas do painel sem erros de console/página | ✅ |

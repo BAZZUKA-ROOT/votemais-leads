@@ -35,6 +35,7 @@ openssl rand -hex 32          # cole em APP_ENCRYPTION_KEY
 | `DB_POOL_MAX` | — | conexões por processo (padrão 10) |
 | `API_INTERNAL_URL` | web (build) | destino dos rewrites `/api/*` do Next. Padrão `http://127.0.0.1:4000` |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | seed | cria o primeiro administrador se não houver usuários |
+| `VML_API_TOKEN` | — | token Bearer (≥ 32 caracteres) para a skill `/harvey` e automações; vazio desativa |
 | `ANALYSIS_DEBOUNCE_MS` | — | atraso para agrupar reanálises do mesmo lead (padrão 20000) |
 
 Credenciais de serviços externos **não** ficam no `.env`: são cadastradas em **Integrações** e gravadas cifradas no banco. Veja [INTEGRATIONS.md](INTEGRATIONS.md).

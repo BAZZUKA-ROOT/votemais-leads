@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { idParam, parse, requireAdmin, userId } from '../api/plugins.js';
 import { aiMode, isAiReady, testAnthropic, testOllama } from '../ai/client.js';
 import { db, pool } from '../db/client.js';
-import { searchJobs, searchQueries, searchResults, suppressionList, systemLogs, users } from '../db/schema.js';
+import { leads, searchJobs, searchQueries, searchResults, suppressionList, systemLogs, users } from '../db/schema.js';
+import { canonicalUrl, domainOf, urlHash } from '../lib/normalize.js';
 import { badRequest, IntegrationUnavailableError, notFound } from '../lib/errors.js';
 import { audit, errMsg } from '../lib/logger.js';
 import { UFS } from '../lib/regions.js';
@@ -150,6 +151,75 @@ export async function operationsRoutes(app: FastifyInstance) {
     }
     await enqueue('plan', { trigger: 'manual', userId: userId(req), categoryIds: body.categoryIds, states: body.states, maxQueries: body.maxQueries, campaignId: body.campaignId ?? null });
     return { status: 'queued' };
+  });
+
+  /**
+   * Recebe URLs encontradas fora dos conectores (ex.: skill /harvey no Claude Code) e as processa
+   * pelo pipeline normal: acesso à página, extração, validação factual, deduplicação e análise.
+   */
+  app.post('/api/search/urls', async (req) => {
+    const body = parse(
+      z.object({
+        urls: z
+          .array(
+            z.union([
+              z.string().url(),
+              z.object({ url: z.string().url(), title: z.string().max(500).optional(), snippet: z.string().max(2000).optional() }),
+            ]),
+          )
+          .min(1)
+          .max(100),
+        categoryId: z.number().int().nullable().optional(),
+        state: z.enum(UFS as [string, ...string[]]).nullable().optional(),
+        leadId: z.string().uuid().nullable().optional(),
+        source: z.string().max(40).default('manual'),
+      }),
+      req.body,
+    );
+    let contextEventId: string | null = null;
+    if (body.leadId) {
+      const [lead] = await db.select({ eventId: leads.eventId }).from(leads).where(eq(leads.id, body.leadId));
+      if (!lead) throw notFound('Lead');
+      contextEventId = lead.eventId;
+    }
+    const items = body.urls.map((u) => (typeof u === 'string' ? { url: u, title: '', snippet: '' } : { url: u.url, title: u.title ?? '', snippet: u.snippet ?? '' }));
+    const connector = body.source.replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'manual';
+    const { jobId, queryId } = await db.transaction(async (tx) => {
+      const [job] = await tx
+        .insert(searchJobs)
+        .values({ type: contextEventId ? 'followup' : 'manual', status: 'running', params: { source: connector, urls: items.length }, triggeredBy: userId(req), contextEventId, totalQueries: 1, completedQueries: 1, startedAt: new Date(), heartbeatAt: new Date() })
+        .returning({ id: searchJobs.id });
+      const [q] = await tx
+        .insert(searchQueries)
+        .values({ jobId: job!.id, query: `URLs enviadas (${connector})`, queryHash: `urls-${job!.id}`, connector, categoryId: body.categoryId ?? null, state: body.state ?? null, origin: 'manual', status: 'done', resultsCount: items.length, startedAt: new Date(), finishedAt: new Date() })
+        .returning({ id: searchQueries.id });
+      return { jobId: job!.id, queryId: q!.id };
+    });
+    const out: Array<{ url: string; status: 'queued' | 'duplicate' | 'invalid'; resultId?: string }> = [];
+    for (const it of items) {
+      const url = canonicalUrl(it.url);
+      const domain = url ? domainOf(url) : null;
+      if (!url || !domain) {
+        out.push({ url: it.url, status: 'invalid' });
+        continue;
+      }
+      const [row] = await db
+        .insert(searchResults)
+        .values({ queryId, jobId, connector, url, urlHash: urlHash(url), domain, title: it.title.slice(0, 500), snippet: it.snippet.slice(0, 2000), status: 'new', contextEventId })
+        .onConflictDoNothing()
+        .returning({ id: searchResults.id });
+      if (!row) {
+        out.push({ url, status: 'duplicate' });
+        continue;
+      }
+      await enqueue('process', { resultId: row.id, jobId }, { jobId: `r-${row.id}` });
+      out.push({ url, status: 'queued', resultId: row.id });
+    }
+    const dup = out.filter((o) => o.status !== 'queued').length;
+    await db.update(searchJobs).set({ resultsFound: items.length, duplicates: dup }).where(eq(searchJobs.id, jobId));
+    await finalizeJobIfDone(jobId);
+    await audit('URLs enviadas para processamento', { source: connector, total: items.length, queued: items.length - dup }, { userId: userId(req), ip: req.ip });
+    return { jobId, results: out };
   });
 
   app.post('/api/search/jobs/:id/cancel', async (req) => {
