@@ -40,6 +40,8 @@ services:
     environment:
       SEARXNG_SECRET: ${SEARXNG_SECRET}
       SEARXNG_BASE_URL: http://searxng:8080/
+      # a rede padrão do Docker não tem IPv6; o padrão "::" faz o SearXNG falhar ao iniciar
+      GRANIAN_HOST: 0.0.0.0
     volumes: ["./deploy/searxng/settings.yml:/etc/searxng/settings.yml:ro"]
 
   # IA local gratuita (opcional). Após subir: docker compose exec ollama ollama pull qwen2.5:7b

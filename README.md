@@ -31,6 +31,14 @@ O [Harvey](https://github.com/ethanplusai/harvey) (MIT) vem junto: abra o projet
 | Pesquisa | Conectores plugáveis: SearXNG (self-hosted), Brave Search API, Serper.dev, Tavily, Google Programmable Search |
 | Enriquecimento | BrasilAPI (CNPJ público) · n8n (webhook opcional) |
 
+## Colocar no ar (grátis, um comando)
+
+Em uma VPS Ubuntu (ex.: Oracle Cloud Always Free — passo a passo em [docs/VPS-GRATIS.md](docs/VPS-GRATIS.md)):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BAZZUKA-ROOT/votemais-leads/main/deploy/install.sh | sudo bash -s -- --email voce@votemais.online
+```
+
 ## Início rápido (desenvolvimento)
 
 ```bash
@@ -51,6 +59,7 @@ Depois, em **Integrações**, configure ao menos um provedor de pesquisa (SearXN
 - [Operação 100% gratuita](docs/FREE.md)
 - [Harvey: skill /harvey e agente de vendas](docs/HARVEY.md)
 - [Integrações e credenciais](docs/INTEGRATIONS.md)
+- [VPS grátis + instalador de um comando](docs/VPS-GRATIS.md)
 - [Deploy na VPS (leads.votemais.online)](docs/DEPLOY.md)
 - [Backup e restauração](docs/BACKUP.md)
 - [Segurança e LGPD](docs/SECURITY.md)
