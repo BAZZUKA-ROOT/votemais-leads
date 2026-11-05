@@ -60,6 +60,7 @@ Depois, em **Integrações**, configure ao menos um provedor de pesquisa (SearXN
 - [Harvey: skill /harvey e agente de vendas](docs/HARVEY.md)
 - [Integrações e credenciais](docs/INTEGRATIONS.md)
 - [VPS grátis + instalador de um comando](docs/VPS-GRATIS.md)
+- [Sem VPS: seu computador + Cloudflare Tunnel](docs/CLOUDFLARE-TUNNEL.md)
 - [Deploy na VPS (leads.votemais.online)](docs/DEPLOY.md)
 - [Backup e restauração](docs/BACKUP.md)
 - [Segurança e LGPD](docs/SECURITY.md)
