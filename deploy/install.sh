@@ -5,6 +5,9 @@
 #   curl -fsSL https://raw.githubusercontent.com/BAZZUKA-ROOT/votemais-leads/main/deploy/install.sh \
 #     | sudo bash -s -- --email voce@votemais.online [--domain leads.votemais.online] [--ollama]
 #
+# Sem VPS (no seu computador, via Cloudflare Tunnel — grátis, HTTPS, sem abrir portas):
+#     ... | sudo bash -s -- --email voce@votemais.online --domain leads.votemais.online --cloudflare-token TOKEN
+#
 # Instala Docker, baixa o projeto em /opt/votemais-leads, gera senhas/chaves,
 # sobe PostgreSQL, Redis, SearXNG, API, workers, painel e Caddy, configura a
 # busca gratuita (SearXNG) e dispara a primeira rodada de pesquisa.
@@ -16,6 +19,7 @@ REPO_URL="${REPO_URL:-https://github.com/BAZZUKA-ROOT/votemais-leads.git}"
 DIR="${DIR:-/opt/votemais-leads}"
 EMAIL=""
 DOMAIN=""
+CF_TOKEN=""
 OLLAMA=0
 OLLAMA_MODEL="${OLLAMA_MODEL:-qwen2.5:7b}"
 SKIP_DOCKER_INSTALL="${SKIP_DOCKER_INSTALL:-0}"
@@ -28,6 +32,7 @@ while [ $# -gt 0 ]; do
     --email) EMAIL="$2"; shift 2 ;;
     --domain) DOMAIN="$2"; shift 2 ;;
     --ollama) OLLAMA=1; shift ;;
+    --cloudflare-token) CF_TOKEN="$2"; shift 2 ;;
     --dir) DIR="$2"; shift 2 ;;
     -h|--help) sed -n 2,13p "$0"; exit 0 ;;
     *) echo "Opção desconhecida: $1" >&2; exit 1 ;;
@@ -106,7 +111,8 @@ ADMIN_NAME=Administrador
 DOMAIN=$DOMAIN
 HTTP_PORT=$HTTP_PORT
 CADDYFILE=./deploy/caddy/Caddyfile.generated
-COMPOSE_PROFILES=searxng$([ "$OLLAMA" = "1" ] && echo ",ollama")
+CLOUDFLARE_TUNNEL_TOKEN=$CF_TOKEN
+COMPOSE_PROFILES=searxng$([ "$OLLAMA" = "1" ] && echo ",ollama")$([ -n "$CF_TOKEN" ] && echo ",cloudflare")
 EOF
   chmod 600 .env
   FIRST_INSTALL=1
@@ -115,7 +121,16 @@ else
   log "Mantendo .env existente"
 fi
 CLI_DOMAIN="$DOMAIN"
+CLI_CF_TOKEN="$CF_TOKEN"
 set -a; . ./.env; set +a
+# --cloudflare-token numa reinstalação: ativa o túnel mantendo senhas e dados
+if [ -n "$CLI_CF_TOKEN" ] && [ "$CLI_CF_TOKEN" != "${CLOUDFLARE_TUNNEL_TOKEN:-}" ]; then
+  log "Ativando Cloudflare Tunnel"
+  grep -q '^CLOUDFLARE_TUNNEL_TOKEN=' .env || echo "CLOUDFLARE_TUNNEL_TOKEN=" >> .env
+  sed -i -e "s|^CLOUDFLARE_TUNNEL_TOKEN=.*|CLOUDFLARE_TUNNEL_TOKEN=$CLI_CF_TOKEN|" .env
+  grep -q '^COMPOSE_PROFILES=.*cloudflare' .env || sed -i -e "s|^COMPOSE_PROFILES=\(.*\)|COMPOSE_PROFILES=\1,cloudflare|" .env
+  set -a; . ./.env; set +a
+fi
 # --domain numa reinstalação: atualiza URL/HTTPS mantendo senhas e dados
 if [ -n "$CLI_DOMAIN" ] && [ "$CLI_DOMAIN" != "${DOMAIN:-}" ]; then
   log "Configurando domínio $CLI_DOMAIN (HTTPS automático)"
@@ -124,7 +139,8 @@ if [ -n "$CLI_DOMAIN" ] && [ "$CLI_DOMAIN" != "${DOMAIN:-}" ]; then
 fi
 
 # ---------------------------------------------------------------- Caddy
-if [ -n "${DOMAIN:-}" ]; then SITE="$DOMAIN"; else SITE=":80"; fi
+# Com Cloudflare Tunnel o HTTPS é feito pelo Cloudflare: o Caddy atende HTTP interno.
+if [ -n "${DOMAIN:-}" ] && [ -z "${CLOUDFLARE_TUNNEL_TOKEN:-}" ]; then SITE="$DOMAIN"; else SITE=":80"; fi
 cat > deploy/caddy/Caddyfile.generated <<EOF
 $SITE {
 	encode zstd gzip
@@ -216,7 +232,9 @@ cat <<EOF
  Atualizar:     sudo bash $DIR/deploy/install.sh
 =====================================================================
 EOF
-if [ -z "${DOMAIN:-}" ]; then
+if [ -n "${CLOUDFLARE_TUNNEL_TOKEN:-}" ]; then
+  echo " Cloudflare Tunnel ativo: no painel Zero Trust, a rota pública deve apontar para http://caddy:80"
+elif [ -z "${DOMAIN:-}" ]; then
   echo " Sem domínio: acesso por HTTP no IP. Para HTTPS, crie o registro A (leads.votemais.online → $PUBLIC_IP)"
   echo " e rode: sudo bash $DIR/deploy/install.sh --domain leads.votemais.online"
 fi

@@ -51,6 +51,16 @@ services:
     profiles: ["ollama"]
     volumes: [ollamadata:/root/.ollama]
 
+  # Publicação sem VPS/portas abertas via Cloudflare Tunnel (grátis). Rota pública → http://caddy:80
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    profiles: ["cloudflare"]
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on: [caddy]
+
   migrate:
     <<: *server
     restart: "no"
