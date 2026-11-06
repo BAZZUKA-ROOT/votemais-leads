@@ -18,6 +18,17 @@ crontab -e
 
 Variáveis opcionais: `BACKUP_DIR` (padrão `./backups`), `BACKUP_KEEP_DAYS` (14), `BACKUP_REMOTE` (destino `rclone`, ex.: `b2:meu-bucket/vml`) para cópia fora da VPS — **recomendado**.
 
+### Cópia externa no Google Cloud Storage (grátis até 5 GB em us-east1/us-central1/us-west1)
+
+No `.env`:
+
+```bash
+BACKUP_GCS_BUCKET=gs://meu-bucket-de-backup
+BACKUP_GCS_KEY=/root/.config/vml-backup-sa.json   # chave de uma conta de serviço com "Storage Object Creator" no bucket
+```
+
+Cada backup (`.dump` + `.sha256`) e o `.env` (em `env/.env`, por causa da `APP_ENCRYPTION_KEY`) são copiados para o bucket. Use um bucket **privado**, com regra de ciclo de vida para apagar arquivos antigos (ex.: 30 dias).
+
 Cada arquivo `votemais_leads-AAAAMMDD-HHMMSS.dump` (formato custom do `pg_dump`, compactado) acompanha um `.sha256`.
 
 Sem Docker: `MODE=host ./deploy/backup/backup.sh` (usa `DATABASE_URL` e `pg_dump` do host).
