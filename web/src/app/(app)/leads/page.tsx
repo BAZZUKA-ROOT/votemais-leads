@@ -314,7 +314,7 @@ function LeadsInner() {
               ))}
             {items.map((l) => (
               <Tr key={l.id} data-selected={selected.has(l.id)}>
-                <Td>
+                <Td className="max-md:hidden">
                   <Checkbox
                     checked={selected.has(l.id)}
                     onCheckedChange={() => {

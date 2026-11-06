@@ -371,7 +371,7 @@ export async function removeContact(leadId: string, contactId: string, userId: s
 }
 
 /** Mudança de estágio com histórico; contatado agenda follow-up automático. */
-export async function changeStage(id: string, to: LeadStage, userId: string | null, opts?: { position?: number; note?: string | null }) {
+export async function changeStage(id: string, to: LeadStage, userId: string | null, opts?: { position?: number; note?: string | null; channel?: 'whatsapp' | 'email' | 'instagram' }) {
   const [lead] = await db.select().from(leads).where(eq(leads.id, id));
   if (!lead) throw notFound('Lead');
   const settings = await getSettings();
@@ -399,7 +399,7 @@ export async function changeStage(id: string, to: LeadStage, userId: string | nu
     if (changed) {
       await tx.insert(contactHistory).values({ leadId: id, userId, type: 'stage_change', fromStage: lead.stage, toStage: to, content: opts?.note ?? null });
       if (to === 'contatado') {
-        await tx.insert(contactHistory).values({ leadId: id, userId, type: 'contact_made', channel: 'whatsapp', content: opts?.note ?? 'Contato registrado' });
+        await tx.insert(contactHistory).values({ leadId: id, userId, type: 'contact_made', channel: opts?.channel ?? 'whatsapp', content: opts?.note ?? 'Contato registrado' });
         const [pending] = await tx.select({ id: followUps.id }).from(followUps).where(and(eq(followUps.leadId, id), eq(followUps.status, 'pending'))).limit(1);
         if (!pending) {
           await tx.insert(followUps).values({
@@ -496,7 +496,8 @@ export async function openChannel(
     url = buildWhatsAppLink(phone, message);
   } else if (input.channel === 'instagram') {
     if (!lead.primaryInstagram) throw badRequest('Instagram não encontrado');
-    url = `https://www.instagram.com/${lead.primaryInstagram}/`;
+    // com mensagem, abre direto o Direct (o texto vai pela área de transferência: o Instagram não aceita texto na URL)
+    url = message ? `https://ig.me/m/${lead.primaryInstagram}` : `https://www.instagram.com/${lead.primaryInstagram}/`;
   } else if (input.channel === 'email') {
     if (!lead.primaryEmail) throw badRequest('E-mail comercial não encontrado');
     url = buildMailtoLink(lead.primaryEmail, `VoteMais — ${detail.event.name}`, message);
@@ -519,10 +520,34 @@ export async function openChannel(
       .set({ status: 'opened', openedAt: new Date(), ...(input.text ? { editedContent: input.text } : {}) })
       .where(eq(generatedMessages.id, input.messageId));
   }
-  if (input.channel === 'whatsapp' && ['novo', 'qualificado'].includes(lead.stage)) {
-    await changeStage(leadId, 'aguardando_contato', userId, { note: 'WhatsApp aberto com mensagem para envio manual' });
+  if ((input.channel === 'whatsapp' || (input.channel === 'instagram' && message)) && ['novo', 'qualificado'].includes(lead.stage)) {
+    await changeStage(leadId, 'aguardando_contato', userId, { note: `${input.channel === 'whatsapp' ? 'WhatsApp' : 'Instagram Direct'} aberto com mensagem para envio manual` });
   }
   return { url: url!, warning };
+}
+
+/** Número sem WhatsApp (informado pelo usuário): deixa de ser usado para abordagem neste lead e no organizador. */
+export async function markNoWhatsapp(leadId: string, rawPhone: string | null, userId: string | null) {
+  const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
+  if (!lead) throw notFound('Lead');
+  const phone = normalizeBrPhone(rawPhone ?? lead.primaryWhatsapp ?? lead.primaryPhone ?? '');
+  if (!phone) throw badRequest('Telefone inválido');
+  await db.transaction(async (tx) => {
+    await tx
+      .update(contacts)
+      .set({ isValid: false, label: 'sem WhatsApp' })
+      .where(
+        and(
+          inArray(contacts.type, ['whatsapp', 'phone']),
+          eq(contacts.normalizedValue, phone.e164),
+          or(eq(contacts.eventId, lead.eventId), lead.organizerId ? eq(contacts.organizerId, lead.organizerId) : sql`false`),
+        ),
+      );
+    await tx.insert(contactHistory).values({ leadId, userId, type: 'edited', content: `Número ${phone.display} sem WhatsApp — não será mais sugerido` });
+    await refreshLeadDenormalized(tx, leadId);
+  });
+  const [after] = await db.select({ primaryWhatsapp: leads.primaryWhatsapp, primaryPhone: leads.primaryPhone, primaryInstagram: leads.primaryInstagram, primaryEmail: leads.primaryEmail }).from(leads).where(eq(leads.id, leadId));
+  return after!;
 }
 
 export async function addNote(leadId: string, content: string, userId: string | null) {
@@ -548,7 +573,7 @@ export async function registerContact(leadId: string, input: { channel: 'whatsap
         .orderBy(desc(generatedMessages.openedAt))
         .limit(1);
   if (opened) await db.update(generatedMessages).set({ status: 'sent', sentAt: at }).where(and(eq(generatedMessages.id, opened.id), eq(generatedMessages.leadId, leadId)));
-  if (['novo', 'qualificado', 'aguardando_contato'].includes(lead.stage)) await changeStage(leadId, 'contatado', userId, { note: input.note ?? null });
+  if (['novo', 'qualificado', 'aguardando_contato'].includes(lead.stage)) await changeStage(leadId, 'contatado', userId, { note: input.note ?? null, channel: input.channel });
   else await db.insert(contactHistory).values({ leadId, userId, type: 'contact_made', channel: input.channel, content: input.note ?? null });
   await db.update(leads).set({ lastContactAt: at }).where(eq(leads.id, leadId));
 }

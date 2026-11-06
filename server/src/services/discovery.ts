@@ -204,7 +204,7 @@ async function upsertContacts(tx: Tx, eventId: string, organizerId: string | nul
       .onConflictDoUpdate({
         target: [contacts.eventId, contacts.type, contacts.normalizedValue],
         targetWhere: sql`${contacts.eventId} is not null`,
-        set: { lastVerifiedAt: new Date(), isValid: true, organizerId: sql`coalesce(${contacts.organizerId}, excluded.organizer_id)` },
+        set: { lastVerifiedAt: new Date(), organizerId: sql`coalesce(${contacts.organizerId}, excluded.organizer_id)` },
       });
   }
 }

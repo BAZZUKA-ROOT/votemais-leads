@@ -39,7 +39,7 @@ export default function ReportsPage() {
         title="Relatórios"
         description="Desempenho da prospecção e da conversão no período."
         actions={
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
             <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="w-36" />
             <span className="text-muted-foreground">até</span>
             <Input type="date" value={to} min={from} max={today} onChange={(e) => setTo(e.target.value)} className="w-36" />

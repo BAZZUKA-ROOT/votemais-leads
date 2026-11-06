@@ -77,7 +77,7 @@ export async function refreshEvents(): Promise<{ checked: number; cancelled: num
               .onConflictDoUpdate({
                 target: [contacts.eventId, contacts.type, contacts.normalizedValue],
                 targetWhere: sql`${contacts.eventId} is not null`,
-                set: { lastVerifiedAt: new Date(), isValid: true },
+                set: { lastVerifiedAt: new Date() },
               })
               .returning({ inserted: sql<boolean>`(xmax = 0)` });
             if (res[0]?.inserted) newContacts++;

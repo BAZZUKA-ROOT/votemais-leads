@@ -59,15 +59,15 @@ export default function LogsPage() {
         <ul className="divide-y font-mono text-xs">
           {q.data?.items.map((l) => (
             <li key={l.id}>
-              <button className="flex w-full items-start gap-3 px-3 py-2 text-left hover:bg-subtle" onClick={() => setOpen(open === l.id ? null : l.id)}>
+              <button className="flex w-full flex-wrap items-start gap-x-3 gap-y-1 px-3 py-2 text-left hover:bg-subtle sm:flex-nowrap" onClick={() => setOpen(open === l.id ? null : l.id)}>
                 <ChevronRight className={cn('mt-0.5 size-3.5 shrink-0 text-muted-foreground transition-transform', open === l.id && 'rotate-90')} />
                 <span className="w-32 shrink-0 text-muted-foreground">{fmtDateTime(l.createdAt)}</span>
                 <Badge variant={LV[l.level]} className="w-14 justify-center">{l.level}</Badge>
-                <span className="w-28 shrink-0 truncate text-muted-foreground">{l.scope}</span>
-                <span className="flex-1 break-words font-sans text-[13px]">{l.message}</span>
+                <span className="shrink-0 truncate text-muted-foreground sm:w-28">{l.scope}</span>
+                <span className="flex-1 break-words font-sans text-[13px] max-sm:basis-full max-sm:pl-6">{l.message}</span>
               </button>
               {open === l.id && (
-                <pre className="mx-3 mb-2 overflow-x-auto rounded-lg bg-muted p-3 text-[11px] scrollbar-thin">{JSON.stringify({ context: l.context, userId: l.userId, ip: l.ip }, null, 2)}</pre>
+                <pre className="mx-3 mb-2 whitespace-pre-wrap break-all rounded-lg bg-muted p-3 text-[11px]">{JSON.stringify({ context: l.context, userId: l.userId, ip: l.ip }, null, 2)}</pre>
               )}
             </li>
           ))}

@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 export const Tabs = T.Root;
 export function TabsList({ className, ...props }: React.ComponentProps<typeof T.List>) {
-  return <T.List className={cn('inline-flex h-8 items-center gap-0.5 rounded-lg bg-muted p-0.5', className)} {...props} />;
+  return <T.List className={cn('inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-lg bg-muted p-0.5', className)} {...props} />;
 }
 export function TabsTrigger({ className, ...props }: React.ComponentProps<typeof T.Trigger>) {
   return (

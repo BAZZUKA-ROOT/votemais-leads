@@ -124,7 +124,7 @@ export default function LeadDetailPage() {
     mutationFn: (b: { outcome: ReplyOutcome; note: string | null }) => api.post(`/leads/${id}/reply`, b),
     onSuccess: () => (setReplyOpen(false), refresh(), toast.success('Resposta registrada')),
   });
-  const contactMade = useMutation({ mutationFn: (at: string | null) => api.post(`/leads/${id}/contact-made`, { channel: 'whatsapp', at }), onSuccess: () => (setContactAt(false), refresh(), toast.success('Contato registrado')) });
+  const contactMade = useMutation({ mutationFn: (b: { at: string | null; channel: ContactChannel }) => api.post(`/leads/${id}/contact-made`, b), onSuccess: () => (setContactAt(false), refresh(), toast.success('Contato registrado')) });
   const remove = useMutation({ mutationFn: (suppress: boolean) => api.del(`/leads/${id}?suppress=${suppress}`), onSuccess: () => (qc.invalidateQueries({ queryKey: ['leads'] }), router.replace('/leads')) });
 
   if (q.isPending) {
@@ -616,7 +616,7 @@ export default function LeadDetailPage() {
       <EditLeadDialog open={editOpen} onOpenChange={setEditOpen} data={q.data} categories={cats.data ?? []} onSaved={refresh} />
       <Dialog open={contactAt} onOpenChange={setContactAt}>
         <DialogContent title="Registrar contato realizado" description="Informe quando a mensagem foi enviada. Um follow-up será agendado automaticamente.">
-          <ContactAtForm onSubmit={(at) => contactMade.mutate(at)} loading={contactMade.isPending} />
+          <ContactAtForm onSubmit={(b) => contactMade.mutate(b)} loading={contactMade.isPending} defaultChannel={lastChannel(q.data?.history)} />
         </DialogContent>
       </Dialog>
       <Dialog open={replyOpen} onOpenChange={setReplyOpen}>
@@ -671,15 +671,30 @@ function ReplyForm({ onSubmit, loading }: { onSubmit: (b: { outcome: ReplyOutcom
   );
 }
 
-function ContactAtForm({ onSubmit, loading }: { onSubmit: (at: string | null) => void; loading: boolean }) {
+type ContactChannel = 'whatsapp' | 'instagram' | 'email';
+/** Canal da última abertura (WhatsApp/Instagram/e-mail) registrada no histórico. */
+const lastChannel = (history?: Array<{ type: string }>): ContactChannel => {
+  const h = history?.find((x) => ['whatsapp_opened', 'instagram_opened', 'email_opened'].includes(x.type));
+  return h ? (h.type.replace('_opened', '') as ContactChannel) : 'whatsapp';
+};
+
+function ContactAtForm({ onSubmit, loading, defaultChannel }: { onSubmit: (b: { at: string | null; channel: ContactChannel }) => void; loading: boolean; defaultChannel: ContactChannel }) {
   const [at, setAt] = useState('');
+  const [channel, setChannel] = useState<ContactChannel>(defaultChannel);
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit(at ? new Date(at).toISOString() : null);
+        onSubmit({ at: at ? new Date(at).toISOString() : null, channel });
       }}
     >
+      <Field label="Canal" className="mb-3">
+        <Select value={channel} onChange={(e) => setChannel(e.target.value as ContactChannel)}>
+          <option value="whatsapp">WhatsApp</option>
+          <option value="instagram">Instagram Direct</option>
+          <option value="email">E-mail</option>
+        </Select>
+      </Field>
       <Field label="Data e hora do contato" hint="Deixe em branco para agora.">
         <Input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} max={new Date().toISOString().slice(0, 16)} />
       </Field>

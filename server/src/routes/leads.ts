@@ -22,6 +22,7 @@ import {
   leadFiltersSchema,
   leadUpdateSchema,
   listLeads,
+  markNoWhatsapp,
   openChannel,
   pipelineBoard,
   registerContact,
@@ -88,6 +89,12 @@ export async function leadRoutes(app: FastifyInstance) {
       req.body,
     );
     return openChannel(id, body, userId(req));
+  });
+
+  app.post('/api/leads/:id/no-whatsapp', async (req) => {
+    const { id } = parse(idParam, req.params);
+    const body = parse(z.object({ phone: z.string().max(40).nullable().optional() }), req.body ?? {});
+    return markNoWhatsapp(id, body.phone ?? null, userId(req));
   });
 
   app.post('/api/leads/:id/contact-made', async (req) => {

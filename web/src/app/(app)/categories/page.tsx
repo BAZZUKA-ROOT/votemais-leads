@@ -80,7 +80,7 @@ export default function CategoriesPage() {
                   {items.map((c) => (
                     <li key={c.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="font-medium">{c.name}</span>
                           <Badge variant="neutral">prioridade {c.priority}</Badge>
                           {c.seasonMonths.length > 0 &&

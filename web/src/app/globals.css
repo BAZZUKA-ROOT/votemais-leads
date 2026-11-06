@@ -158,6 +158,74 @@
     outline: 2px solid var(--color-ring);
     outline-offset: 2px;
   }
+  /* itens de grade e colunas flexíveis podem encolher até a largura da tela: textos longos quebram/truncam em vez de alargar a página */
+  .grid > *,
+  .flex-1 {
+    min-width: 0;
+  }
+}
+
+/* Celular: tabelas viram cartões (uma linha = um cartão, cada célula com o rótulo da coluna) — nada de rolagem lateral.
+   Em @layer components para que utilitários como max-md:hidden continuem valendo. */
+@layer components {
+  @media (max-width: 767.98px) {
+    .rtable thead {
+      display: none;
+    }
+    .rtable,
+    .rtable tbody,
+    .rtable tr {
+      display: block;
+      width: 100%;
+    }
+    .rtable tr {
+      padding: 10px 14px;
+    }
+    .rtable td {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      max-width: none !important;
+      padding: 2px 0;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+    .rtable td::before {
+      content: attr(data-label);
+      flex-shrink: 0;
+      text-align: left;
+      font-size: 11px;
+      color: var(--color-muted-foreground);
+    }
+    .rtable td[data-label='']::before,
+    .rtable td:not([data-label])::before,
+    .rtable td[data-primary]::before {
+      content: none;
+    }
+    .rtable td[data-label=''],
+    .rtable td:not([data-label]),
+    .rtable td[data-primary] {
+      justify-content: flex-start;
+      text-align: left;
+    }
+    .rtable td[data-primary] {
+      padding-bottom: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: normal;
+    }
+    .rtable td[data-primary] * {
+      white-space: normal;
+    }
+    .rtable td > * {
+      min-width: 0;
+    }
+    .rtable td:empty,
+    .rtable td[data-empty] {
+      display: none;
+    }
+  }
 }
 
 @utility tabular {
