@@ -16,8 +16,11 @@ O [Harvey](https://github.com/ethanplusai/harvey) (MIT) vem junto: abra o projet
 1. Acesse o painel → **Dashboard** / **Leads** (filtro "Qualificados").
 2. Abra o lead, confira fatos × hipóteses e as fontes de cada dado.
 3. **Abrir WhatsApp** → revise/edite a mensagem gerada → envie manualmente.
-4. **Registrar contato** → o lead vai para *Contatado* e um follow-up é agendado.
-5. Atualize o estágio no **Pipeline** (Kanban com arrastar e soltar).
+4. **Registrar contato** → o lead vai para *Contatado*, a mensagem conta como enviada e um follow-up é agendado.
+5. Quando a pessoa responder: **Registrar resposta** (com interesse / neutra / sem interesse). Em **Relatórios → Respostas por abordagem** você vê qual mensagem funciona melhor.
+6. Atualize o estágio no **Pipeline** (Kanban com arrastar e soltar). Mover para *Interessado* ou *Sem interesse* também registra a resposta.
+
+As rodadas automáticas priorizam categorias **em temporada** (ex.: "Melhores do Ano" em nov–jan, Carnaval a partir de nov, festas juninas a partir de mar, rodeios de jan a out). Ajuste os meses de cada categoria em **Categorias**.
 
 ## Stack
 

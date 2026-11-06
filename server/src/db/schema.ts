@@ -109,6 +109,7 @@ export const analysisType = pgEnum('analysis_type', ['extraction', 'classificati
 export const messageChannel = pgEnum('message_channel', ['whatsapp', 'email', 'instagram']);
 export const messageKind = pgEnum('message_kind', ['initial', 'followup']);
 export const messageStatus = pgEnum('message_status', ['draft', 'opened', 'sent', 'discarded']);
+export const replyOutcome = pgEnum('reply_outcome', ['positive', 'neutral', 'negative']);
 export const historyType = pgEnum('history_type', [
   'created',
   'stage_change',
@@ -124,6 +125,7 @@ export const historyType = pgEnum('history_type', [
   'followup_done',
   'analysis',
   'suppressed',
+  'reply_received',
 ]);
 export const followUpStatus = pgEnum('follow_up_status', ['pending', 'done', 'cancelled']);
 export const integrationKind = pgEnum('integration_kind', ['search', 'ai', 'enrichment', 'automation']);
@@ -167,6 +169,8 @@ export const categories = pgTable('categories', {
   keywords: text('keywords').array().notNull().default(sql`'{}'::text[]`),
   negativeKeywords: text('negative_keywords').array().notNull().default(sql`'{}'::text[]`),
   priority: smallint('priority').notNull().default(5),
+  // meses (1–12) em que os eventos acontecem; vazio = o ano todo
+  seasonMonths: smallint('season_months').array().notNull().default(sql`'{}'::smallint[]`),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
@@ -440,6 +444,8 @@ export const generatedMessages = pgTable('generated_messages', {
   model: text('model'),
   openedAt: ts('opened_at'),
   sentAt: ts('sent_at'),
+  replyOutcome: replyOutcome('reply_outcome'),
+  repliedAt: ts('replied_at'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (t) => [index('generated_messages_lead_idx').on(t.leadId, t.createdAt)]);

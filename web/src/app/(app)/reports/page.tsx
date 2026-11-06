@@ -22,6 +22,7 @@ interface Report {
   categoryConversion: R[];
   recurringOrganizers: Array<{ id: string; name: string; state: string | null; eventsCount: number; instagramHandle: string | null }>;
   stageTransitions: R[];
+  approaches: R[];
 }
 const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 1000) / 10}%` : '—');
 const SOURCE_LABEL: Record<string, string> = { event_site: 'Site do evento', government: 'Prefeituras/gov', news: 'Portais de notícia', instagram_search: 'Busca Instagram', ticketing: 'Ingressos', directory: 'Diretórios', search_result: 'Resultado de busca', other: 'Outros' };
@@ -76,6 +77,42 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
 
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <div>
+                  <CardTitle>Respostas por abordagem</CardTitle>
+                  <CardDescription>Mensagens enviadas no período e quantas tiveram resposta (registre em cada lead: “Registrar resposta”, ou mova para Interessado/Sem interesse)</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="px-0">
+                <Table>
+                  <THead>
+                    <Tr className="hover:bg-transparent"><Th>Abordagem</Th><Th>Tipo</Th><Th className="text-right">Enviadas</Th><Th className="text-right">Respostas</Th><Th className="text-right">Com interesse</Th><Th className="text-right">Sem interesse</Th><Th className="text-right">Taxa de resposta</Th><Th className="text-right">Tempo médio</Th></Tr>
+                  </THead>
+                  <TBody>
+                    {d.approaches.map((r) => {
+                      const best = Number(r.sent) >= 5 && Number(r.positive) === Math.max(...d.approaches.filter((x) => Number(x.sent) >= 5).map((x) => Number(x.positive)));
+                      return (
+                        <Tr key={`${r.approach}-${r.kind}`}>
+                          <Td className="max-w-80 truncate" title={String(r.approach)}>
+                            {r.approach} {best && Number(r.positive) > 0 && <Badge className="ml-1">melhor</Badge>}
+                          </Td>
+                          <Td className="text-muted-foreground">{r.kind === 'followup' ? 'Follow-up' : 'Inicial'}</Td>
+                          <Td className="text-right tabular">{fmtNum(Number(r.sent))}</Td>
+                          <Td className="text-right tabular">{fmtNum(Number(r.replied))}</Td>
+                          <Td className="text-right tabular text-success">{fmtNum(Number(r.positive))}</Td>
+                          <Td className="text-right tabular">{fmtNum(Number(r.negative))}</Td>
+                          <Td className="text-right tabular font-medium">{pct(Number(r.replied), Number(r.sent))}</Td>
+                          <Td className="text-right tabular text-muted-foreground">{r.avgReplyHours == null ? '—' : Number(r.avgReplyHours) < 48 ? `${r.avgReplyHours} h` : `${Math.round(Number(r.avgReplyHours) / 24)} d`}</Td>
+                        </Tr>
+                      );
+                    })}
+                  </TBody>
+                </Table>
+                {!d.approaches.length && <EmptyState title="Nenhuma mensagem enviada no período" description="Ao usar “Registrar contato” com a mensagem gerada, ela entra nesta medição." />}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Conversão por categoria</CardTitle>
@@ -83,7 +120,7 @@ export default function ReportsPage() {
               <CardContent className="px-0">
                 <Table>
                   <THead>
-                    <Tr className="hover:bg-transparent"><Th>Categoria</Th><Th className="text-right">Leads</Th><Th className="text-right">Contatados</Th><Th className="text-right">Interessados</Th><Th className="text-right">Clientes</Th><Th className="text-right">Conv.</Th></Tr>
+                    <Tr className="hover:bg-transparent"><Th>Categoria</Th><Th className="text-right">Leads</Th><Th className="text-right">Contatados</Th><Th className="text-right">Responderam</Th><Th className="text-right">Interessados</Th><Th className="text-right">Clientes</Th><Th className="text-right">Conv.</Th></Tr>
                   </THead>
                   <TBody>
                     {d.categoryConversion.map((r) => (
@@ -91,6 +128,7 @@ export default function ReportsPage() {
                         <Td className="max-w-48 truncate">{r.category}</Td>
                         <Td className="text-right tabular">{fmtNum(Number(r.total))}</Td>
                         <Td className="text-right tabular">{fmtNum(Number(r.contacted))}</Td>
+                        <Td className="text-right tabular">{fmtNum(Number(r.replied))}</Td>
                         <Td className="text-right tabular">{fmtNum(Number(r.interested))}</Td>
                         <Td className="text-right tabular font-medium">{fmtNum(Number(r.converted))}</Td>
                         <Td className="text-right tabular text-muted-foreground">{pct(Number(r.converted), Number(r.contacted))}</Td>

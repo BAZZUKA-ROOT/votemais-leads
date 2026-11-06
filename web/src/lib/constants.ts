@@ -94,4 +94,5 @@ export const HISTORY_LABEL: Record<string, string> = {
   followup_done: 'Follow-up concluído',
   analysis: 'Análise da IA',
   suppressed: 'Supressão',
+  reply_received: 'Resposta recebida',
 };

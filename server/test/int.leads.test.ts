@@ -143,6 +143,40 @@ describe('gestão de leads, filtros, pipeline e WhatsApp', () => {
     expect((await c.send('POST', `/api/leads/${leadB}/contact-made`, { at: future })).status).toBe(400);
   });
 
+  it('respostas: mensagem aberta vira enviada, resposta mede a abordagem e avança a etapa', async () => {
+    const [m1] = await db.insert(generatedMessages).values({ leadId: leadA, kind: 'initial', approach: 'modelo 1', content: 'Olá! Vi o concurso Rainha do Rodeio de Barretos.', status: 'opened', openedAt: new Date() }).returning();
+    expect((await c.send('POST', `/api/leads/${leadA}/contact-made`, {})).status).toBe(200);
+    expect((await db.select().from(generatedMessages).where(eq(generatedMessages.id, m1!.id)))[0]!.status).toBe('sent');
+    expect((await db.select().from(followUps).where(eq(followUps.leadId, leadA))).filter((f) => f.status === 'pending')).toHaveLength(1);
+
+    const r = await c.send('POST', `/api/leads/${leadA}/reply`, { outcome: 'positive', note: 'quer saber o preço' });
+    expect(r.body.messageId).toBe(m1!.id);
+    const [m] = await db.select().from(generatedMessages).where(eq(generatedMessages.id, m1!.id));
+    expect(m!.replyOutcome).toBe('positive');
+    const [lead] = await db.select().from(leads).where(eq(leads.id, leadA));
+    expect(lead!.stage).toBe('interessado');
+    expect((await db.select().from(followUps).where(eq(followUps.leadId, leadA))).filter((f) => f.status === 'pending')).toHaveLength(0);
+    expect((await db.select().from(contactHistory).where(eq(contactHistory.leadId, leadA))).some((h) => h.type === 'reply_received')).toBe(true);
+    // a resposta já foi atribuída: mudar de etapa não reatribui
+    await c.send('POST', `/api/leads/${leadA}/stage`, { stage: 'sem_interesse' });
+    expect((await db.select().from(generatedMessages).where(eq(generatedMessages.id, m1!.id)))[0]!.replyOutcome).toBe('positive');
+
+    // mover para "sem interesse" após um envio registra resposta negativa
+    const [m2] = await db.insert(generatedMessages).values({ leadId: leadB, kind: 'initial', approach: 'modelo 2', content: 'Olá! Vi o concurso Rainha do Rodeio de Jaguariúna.', status: 'opened', openedAt: new Date() }).returning();
+    await c.send('POST', `/api/leads/${leadB}/contact-made`, {});
+    await c.send('POST', `/api/leads/${leadB}/stage`, { stage: 'sem_interesse' });
+    expect((await db.select().from(generatedMessages).where(eq(generatedMessages.id, m2!.id)))[0]!.replyOutcome).toBe('negative');
+
+    const rep = await c.get('/api/reports');
+    expect(rep.body.approaches).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ approach: 'modelo 1', sent: 1, replied: 1, positive: 1 }),
+        expect.objectContaining({ approach: 'modelo 2', sent: 1, replied: 1, negative: 1 }),
+      ]),
+    );
+    expect((await c.send('POST', `/api/leads/${leadA}/reply`, { outcome: 'talvez' })).status).toBe(400);
+  });
+
   it('follow-ups: criar, concluir e listar vencidos', async () => {
     const past = new Date(Date.now() - 60_000).toISOString();
     const r = await c.send('POST', '/api/followups', { leadId: leadB, dueAt: past, title: 'Ligar' });

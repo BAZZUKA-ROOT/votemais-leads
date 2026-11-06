@@ -3,6 +3,7 @@ import { db } from '../db/client.js';
 import { automationSettings, categories } from '../db/schema.js';
 import { syslog } from '../lib/logger.js';
 import { UFS } from '../lib/regions.js';
+import { inSeason, monthIn } from '../lib/season.js';
 import type { JobPayloads } from '../queue/queues.js';
 import { buildQueries, type PlannedQuery } from '../search/query-builder.js';
 import { createSearchJob, orderedSearchProviders } from './search-runner.js';
@@ -20,6 +21,18 @@ function rotate<T>(arr: T[], start: number, n: number): T[] {
   const out: T[] = [];
   for (let i = 0; i < Math.min(n, arr.length); i++) out.push(arr[(start + i) % arr.length]!);
   return out;
+}
+
+/**
+ * Até metade das vagas da rodada vai para categorias em temporada (ordenadas por prioridade, em rodízio);
+ * o restante segue o rodízio normal das demais, para nenhuma categoria ficar sem cobertura.
+ */
+export function pickCategories<T extends { seasonMonths: number[] }>(all: T[], round: number, perRun: number, month: number): T[] {
+  const seasonal = all.filter((c) => inSeason(c.seasonMonths, month));
+  const others = all.filter((c) => !inSeason(c.seasonMonths, month));
+  const kS = Math.min(seasonal.length, Math.ceil(perRun / 2));
+  const kO = Math.min(others.length, perRun - kS);
+  return [...rotate(seasonal, round * kS, kS), ...rotate(others, round * kO, kO)];
 }
 
 async function todayCounts(tz: string) {
@@ -59,7 +72,7 @@ export async function planRun(payload: JobPayloads['plan']): Promise<PlanResult>
   if (!states.length) return skip('nenhum estado válido');
 
   const manual = Boolean(payload.categoryIds?.length || payload.states?.length);
-  const cats = manual ? allCats.slice(0, settings.categoriesPerRun * 3) : rotate(allCats, settings.categoryCursor, settings.categoriesPerRun);
+  const cats = manual ? allCats.slice(0, settings.categoriesPerRun * 3) : pickCategories(allCats, settings.categoryCursor, settings.categoriesPerRun, monthIn(settings.timezone));
   const sts = manual ? states : rotate(states, settings.stateCursor, settings.statesPerRun);
   const maxQueries = Math.min(payload.maxQueries ?? settings.queriesPerRun, 500);
   const perPair = Math.max(1, Math.ceil(maxQueries / (cats.length * sts.length)));
@@ -77,7 +90,8 @@ export async function planRun(payload: JobPayloads['plan']): Promise<PlanResult>
     await db
       .update(automationSettings)
       .set({
-        categoryCursor: (settings.categoryCursor + cats.length) % allCats.length,
+        // contador de rodadas: pickCategories desloca cada grupo pelo próprio tamanho de fatia
+        categoryCursor: (settings.categoryCursor + 1) % 1_000_000,
         stateCursor: (settings.stateCursor + sts.length) % states.length,
       })
       .where(eq(automationSettings.id, 1));

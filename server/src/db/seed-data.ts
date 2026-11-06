@@ -4,13 +4,14 @@ export interface SeedCategory {
   group: 'beleza' | 'rodeio' | 'municipal' | 'premiacao' | 'outros';
   keywords: string[];
   priority: number;
+  seasonMonths?: number[];
 }
 
 const NEG = ['fantasia de', 'vaga de emprego', 'filme', 'novela', 'jogo online', 'loja', 'aluguel', 'curso de'];
 
 export const DEFAULT_NEGATIVE = NEG;
 
-export const DEFAULT_CATEGORIES: SeedCategory[] = [
+const RAW_CATEGORIES: SeedCategory[] = [
   { slug: 'miss-brasil', name: 'Miss Brasil', group: 'beleza', keywords: ['Miss Brasil', 'Miss Brasil seletiva'], priority: 6 },
   { slug: 'miss-estadual', name: 'Miss Estadual', group: 'beleza', keywords: ['Miss estadual', 'concurso Miss estado'], priority: 8 },
   { slug: 'miss-municipal', name: 'Miss Municipal', group: 'beleza', keywords: ['Miss municipal', 'concurso Miss cidade'], priority: 8 },
@@ -67,3 +68,35 @@ export const DEFAULT_CATEGORIES: SeedCategory[] = [
   { slug: 'festival-gospel', name: 'Festivais e troféus gospel', group: 'outros', keywords: ['festival gospel votação', 'troféu gospel votação popular'], priority: 5 },
   { slug: 'concurso-cosplay', name: 'Concursos de cosplay', group: 'outros', keywords: ['concurso cosplay votação', 'cosplay votação popular'], priority: 4 },
 ];
+
+const YEAR_END = [11, 12, 1];
+const RODEO = [3, 4, 5, 6, 7, 8, 9, 10];
+
+/** Meses em que os eventos de cada categoria acontecem (vazio = o ano todo). */
+export const DEFAULT_SEASONS: Record<string, number[]> = {
+  'melhores-do-ano': YEAR_END,
+  'melhor-comercio': YEAR_END,
+  'melhor-profissional': YEAR_END,
+  'melhor-empresa': YEAR_END,
+  'destaques-da-cidade': YEAR_END,
+  'premiacao-regional': YEAR_END,
+  'personalidade-do-ano': YEAR_END,
+  'premio-empreendedor': YEAR_END,
+  'premio-comunicacao': YEAR_END,
+  'destaque-esporte': YEAR_END,
+  'rainha-do-rodeio': RODEO,
+  'princesa-do-rodeio': RODEO,
+  'musa-do-rodeio': RODEO,
+  'rainha-da-expo': RODEO,
+  'rainha-do-agro': RODEO,
+  'garota-expo': RODEO,
+  'festa-agropecuaria': RODEO,
+  'rainha-country': RODEO,
+  'corte-carnaval': [1, 2],
+  'festa-junina': [5, 6, 7],
+  'garota-verao': [12, 1, 2],
+  'decoracao-natal': [12],
+  'prenda-ctg': [8, 9],
+};
+
+export const DEFAULT_CATEGORIES: SeedCategory[] = RAW_CATEGORIES.map((c) => ({ ...c, seasonMonths: DEFAULT_SEASONS[c.slug] ?? [] }));

@@ -59,6 +59,12 @@ describe('catálogo: eventos, organizadores, categorias, campanhas', () => {
     expect(created.body.slug).toBe('rainha-do-carnaval');
     expect((await c.send('POST', '/api/categories', { name: 'Rainha do Carnaval', group: 'municipal', keywords: ['x'] })).status).toBe(400);
     expect((await c.send('PUT', `/api/categories/${created.body.id}`, { keywords: ['Rainha do Carnaval', 'Rei Momo'] })).body.keywords).toHaveLength(2);
+    const seasonal = await c.send('PUT', `/api/categories/${created.body.id}`, { seasonMonths: [1, 2], negativeKeywords: ['bloco'] });
+    expect(seasonal.body.seasonMonths).toEqual([1, 2]);
+    // atualização parcial não pode zerar campos com valor padrão
+    const toggled = await c.send('PUT', `/api/categories/${created.body.id}`, { isActive: false });
+    expect(toggled.body).toMatchObject({ isActive: false, priority: 7, seasonMonths: [1, 2], negativeKeywords: ['bloco'] });
+    expect(list.body.find((x: any) => x.slug === 'melhores-do-ano').seasonMonths).toEqual([11, 12, 1]);
     expect((await c.send('DELETE', `/api/categories/${created.body.id}`)).body.deleted).toBe(true);
     const used = list.body.find((x: any) => x.slug === 'rainha-da-expo');
     expect((await c.send('DELETE', `/api/categories/${used.id}`)).body).toMatchObject({ deleted: false, deactivated: true });
