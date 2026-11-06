@@ -18,3 +18,18 @@ server:
 outgoing:
   request_timeout: 6.0
   max_request_timeout: 12.0
+# Mais mecanismos gerais: quando um pede CAPTCHA ou suspende (comum em IPs de nuvem), os outros seguem respondendo.
+# Se todos falharem, o VoteMais Leads passa a consulta ao próximo provedor configurado (Tavily, Serper…).
+engines:
+  - name: bing
+    disabled: false
+  - name: mojeek
+    disabled: false
+  - name: yahoo
+    disabled: false
+  - name: startpage
+    disabled: false
+  - name: qwant
+    disabled: false
+  - name: google
+    disabled: false
