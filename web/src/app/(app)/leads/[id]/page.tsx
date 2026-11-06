@@ -584,8 +584,8 @@ export default function LeadDetailPage() {
               >
                 <Input value={fuForm.title} onChange={(e) => setFuForm({ ...fuForm, title: e.target.value })} required />
                 <div className="flex gap-2">
-                  <Input type="datetime-local" required value={fuForm.dueAt} onChange={(e) => setFuForm({ ...fuForm, dueAt: e.target.value })} />
-                  <Button type="submit" variant="outline" loading={addFu.isPending}>
+                  <Input type="datetime-local" className="min-w-0" required value={fuForm.dueAt} onChange={(e) => setFuForm({ ...fuForm, dueAt: e.target.value })} />
+                  <Button type="submit" variant="outline" className="shrink-0" loading={addFu.isPending}>
                     <Plus />
                   </Button>
                 </div>

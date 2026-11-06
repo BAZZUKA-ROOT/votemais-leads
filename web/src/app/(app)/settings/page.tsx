@@ -245,7 +245,7 @@ function Campaigns() {
               <Textarea rows={2} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
             </Field>
             <Field label="Categorias" hint="Ctrl/Cmd para selecionar várias">
-              <select multiple className="h-28 rounded-md border bg-card p-1 text-xs" value={f.categoryIds.map(String)} onChange={(e) => setF({ ...f, categoryIds: [...e.target.selectedOptions].map((o) => Number(o.value)) })}>
+              <select multiple className="h-28 rounded-md border bg-card p-1 text-base md:text-xs" value={f.categoryIds.map(String)} onChange={(e) => setF({ ...f, categoryIds: [...e.target.selectedOptions].map((o) => Number(o.value)) })}>
                 {cats.data?.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -254,7 +254,7 @@ function Campaigns() {
               </select>
             </Field>
             <Field label="Estados">
-              <select multiple className="h-28 rounded-md border bg-card p-1 text-xs" value={f.states} onChange={(e) => setF({ ...f, states: [...e.target.selectedOptions].map((o) => o.value) })}>
+              <select multiple className="h-28 rounded-md border bg-card p-1 text-base md:text-xs" value={f.states} onChange={(e) => setF({ ...f, states: [...e.target.selectedOptions].map((o) => o.value) })}>
                 {UFS.map(([uf, n]) => (
                   <option key={uf} value={uf}>
                     {uf} — {n}

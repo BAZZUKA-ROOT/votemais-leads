@@ -150,6 +150,8 @@
     color: var(--color-foreground);
     font-feature-settings: 'cv11', 'ss01';
     -webkit-font-smoothing: antialiased;
+    /* palavras/links longos quebram em vez de alargar a página */
+    overflow-wrap: break-word;
   }
   ::selection {
     background: color-mix(in oklch, var(--color-primary) 25%, transparent);
@@ -157,6 +159,13 @@
   :focus-visible {
     outline: 2px solid var(--color-ring);
     outline-offset: 2px;
+  }
+  /* celular: a página nunca rola para os lados (rede de segurança; overflow: clip não quebra position: sticky) */
+  @media (max-width: 767.98px) {
+    html,
+    body {
+      overflow-x: clip;
+    }
   }
   /* itens de grade e colunas flexíveis podem encolher até a largura da tela: textos longos quebram/truncam em vez de alargar a página */
   .grid > *,

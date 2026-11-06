@@ -5,7 +5,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
   <input
     ref={ref}
     className={cn(
-      'flex h-8 w-full rounded-md border border-input bg-card px-2.5 text-[13px] shadow-xs transition-colors placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-50',
+      'flex h-8 w-full min-w-0 rounded-md border border-input bg-card px-2.5 text-base shadow-xs transition-colors md:text-[13px] placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-50',
       className,
     )}
     {...props}
@@ -17,7 +17,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
   <textarea
     ref={ref}
     className={cn(
-      'flex min-h-20 w-full rounded-md border border-input bg-card px-2.5 py-2 text-[13px] leading-relaxed shadow-xs placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-50',
+      'flex min-h-20 w-full rounded-md border border-input bg-card px-2.5 py-2 text-base leading-relaxed md:text-[13px] shadow-xs placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-50',
       className,
     )}
     {...props}
@@ -29,7 +29,7 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
   <select
     ref={ref}
     className={cn(
-      'h-8 w-full appearance-none rounded-md border border-input bg-card bg-[length:14px] bg-[right_8px_center] bg-no-repeat pl-2.5 pr-7 text-[13px] shadow-xs focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/20',
+      'h-8 w-full appearance-none rounded-md border border-input bg-card bg-[length:14px] bg-[right_8px_center] bg-no-repeat pl-2.5 pr-7 text-base shadow-xs md:text-[13px] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/20',
       "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")]",
       className,
     )}
