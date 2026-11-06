@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { GroundedExtraction } from '../src/ai/extraction.js';
 import { persistDiscovery } from '../src/services/discovery.js';
 import { login, type Client } from './api-client.js';
+import { DEFAULT_CATEGORIES } from '../src/db/seed-data.js';
 import { createAdmin, resetDb } from './helpers.js';
 
 function g(name: string, ig: string): GroundedExtraction {
@@ -51,7 +52,7 @@ describe('catálogo: eventos, organizadores, categorias, campanhas', () => {
   it('CRUD de categorias com palavras-chave', async () => {
     const list = await c.get('/api/categories');
     expect(list.status).toBe(200);
-    expect(list.body.length).toBe(32);
+    expect(list.body.length).toBe(DEFAULT_CATEGORIES.length);
     expect(list.body.find((x: any) => x.slug === 'rainha-da-expo').leads).toBe(2);
     const created = await c.send('POST', '/api/categories', { name: 'Rainha do Carnaval', group: 'municipal', keywords: ['Rainha do Carnaval'], priority: 7 });
     expect(created.status).toBe(200);
