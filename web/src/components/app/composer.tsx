@@ -157,7 +157,7 @@ export function WhatsAppComposer({ leadId, open, onOpenChange, kind = 'initial' 
             </div>
           </div>
           <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={9} placeholder={lead.isPending ? 'Carregando…' : 'Gere uma mensagem com IA ou escreva a sua.'} />
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
             <span>{text.length} caracteres</span>
             <span>Você revisa e envia pelo WhatsApp ou pelo Instagram. Nada é enviado automaticamente.</span>
           </div>

@@ -1,5 +1,6 @@
 'use client';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useEffect, useState } from 'react';
 import { fmtNum } from '@/lib/format';
 
 const axis = { stroke: 'var(--color-muted-foreground)', fontSize: 11, tickLine: false, axisLine: false } as const;
@@ -60,12 +61,32 @@ export function HBarChart({ data, labelKey, valueKey, height = 240, color = 'var
   );
 }
 
+/** Tela estreita (celular): gráficos inclinam rótulos para não se sobreporem. */
+function useNarrow(max = 640) {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${max}px)`);
+    const on = () => setNarrow(mq.matches);
+    on();
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [max]);
+  return narrow;
+}
+
 export function VBarChart({ data, labelKey, series, height = 240, stacked }: { data: Array<Record<string, number | string>>; labelKey: string; series: Array<{ key: string; label: string; color?: string }>; height?: number; stacked?: boolean }) {
+  const tilt = useNarrow() && data.length > 4;
   return (
-    <ResponsiveContainer width="100%" height={height}>
+    <ResponsiveContainer width="100%" height={tilt ? height + 40 : height}>
       <BarChart data={data} margin={{ top: 8, right: 4, left: -24, bottom: 0 }}>
         <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
-        <XAxis dataKey={labelKey} {...axis} interval={0} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} />
+        <XAxis
+          dataKey={labelKey}
+          {...axis}
+          interval={tilt && data.length > 12 ? 'preserveStartEnd' : 0}
+          tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }}
+          {...(tilt ? { angle: -40, textAnchor: 'end', height: 56 } : {})}
+        />
         <YAxis allowDecimals={false} {...axis} />
         <Tooltip content={<TooltipBox />} cursor={{ fill: 'var(--color-muted)' }} />
         {series.map((s, i) => (
