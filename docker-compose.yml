@@ -1,7 +1,8 @@
 name: votemais-leads
 
 x-server: &server
-  image: votemais-leads-server:latest
+  # imagens prontas publicadas pelo GitHub Actions (ghcr.io); sem elas, o instalador compila localmente
+  image: ${VML_IMAGE_PREFIX:-ghcr.io/bazzuka-root/}votemais-leads-server:${VML_IMAGE_TAG:-latest}
   build: { context: ., dockerfile: server/Dockerfile }
   env_file: .env
   restart: unless-stopped
@@ -13,6 +14,7 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    command: ["postgres", "-c", "shared_buffers=${PG_SHARED_BUFFERS:-128MB}", "-c", "max_connections=${PG_MAX_CONNECTIONS:-60}"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -83,12 +85,14 @@ services:
       migrate: { condition: service_completed_successfully }
 
   web:
-    image: votemais-leads-web:latest
+    image: ${VML_IMAGE_PREFIX:-ghcr.io/bazzuka-root/}votemais-leads-web:${VML_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: web/Dockerfile
       args: { API_INTERNAL_URL: "http://api:4000" }
     restart: unless-stopped
+    environment:
+      NODE_OPTIONS: ${NODE_OPTIONS:-}
     depends_on: [api]
 
   caddy:
