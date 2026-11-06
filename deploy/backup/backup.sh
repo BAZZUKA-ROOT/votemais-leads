@@ -27,3 +27,16 @@ echo "$(date -Is) backup ok: $FILE ($(du -h "$FILE" | cut -f1))"
 if [ -n "${BACKUP_REMOTE:-}" ] && command -v rclone >/dev/null; then
   rclone copy "$FILE" "$BACKUP_REMOTE" && rclone copy "$FILE.sha256" "$BACKUP_REMOTE"
 fi
+
+# Cópia externa no Google Cloud Storage: BACKUP_GCS_BUCKET=gs://bucket[/pasta]
+# BACKUP_GCS_KEY = chave JSON de uma conta de serviço com permissão de gravação no bucket (opcional na VM com escopo de escrita)
+if [ -n "${BACKUP_GCS_BUCKET:-}" ] && command -v gcloud >/dev/null; then
+  export CLOUDSDK_CONFIG="${BACKUP_GCS_CONFIG:-/root/.config/vml-backup-gcloud}"
+  if [ -n "${BACKUP_GCS_KEY:-}" ] && ! gcloud auth list --format='value(account)' 2>/dev/null | grep -q .; then
+    gcloud auth activate-service-account --key-file="$BACKUP_GCS_KEY" --quiet
+  fi
+  gcloud storage cp --quiet "$FILE" "$FILE.sha256" "${BACKUP_GCS_BUCKET%/}/"
+  # .env guarda APP_ENCRYPTION_KEY: sem ela as credenciais cifradas do banco não podem ser lidas
+  gcloud storage cp --quiet .env "${BACKUP_GCS_BUCKET%/}/env/.env"
+  echo "$(date -Is) cópia externa ok: ${BACKUP_GCS_BUCKET%/}/$(basename "$FILE")"
+fi
