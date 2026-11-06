@@ -188,7 +188,7 @@ function LeadsInner() {
               <Filter /> Mais filtros {activeFilters > 0 && <Badge className="ml-0.5">{activeFilters}</Badge>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[22rem]" align="end">
+          <PopoverContent className="w-[min(22rem,calc(100vw-1.5rem))]" align="end">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Região">
                 <Select value={filters.region ?? ''} onChange={(e) => set({ region: e.target.value || undefined })}>
