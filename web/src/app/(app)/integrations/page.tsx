@@ -118,7 +118,11 @@ function IntegrationCard({ it }: { it: Integration }) {
                     <KeyRound className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       type="password"
-                      autoComplete="off"
+                      // "off" é ignorado pelo Chrome em campos de senha; "new-password" impede o preenchimento com a senha salva
+                      autoComplete="new-password"
+                      name={`${it.provider}-${f.key}`}
+                      data-1p-ignore
+                      data-lpignore="true"
                       className="pl-8"
                       placeholder={it.secrets[f.key] ? `${it.secrets[f.key]} (salva — digite para substituir)` : (f.placeholder ?? 'não configurada')}
                       value={secrets[f.key] ?? ''}
@@ -142,7 +146,7 @@ function IntegrationCard({ it }: { it: Integration }) {
               </Field>
             ) : (
               <Field key={f.key} label={`${f.label}${f.required ? '' : ' (opcional)'}`}>
-                <Input type={f.type === 'url' ? 'url' : 'text'} placeholder={f.placeholder} value={config[f.key] ?? ''} onChange={(e) => setConfig({ ...config, [f.key]: e.target.value })} />
+                <Input type={f.type === 'url' ? 'url' : 'text'} autoComplete="off" name={`${it.provider}-${f.key}`} data-1p-ignore data-lpignore="true" placeholder={f.placeholder} value={config[f.key] ?? ''} onChange={(e) => setConfig({ ...config, [f.key]: e.target.value })} />
               </Field>
             ),
           )}
