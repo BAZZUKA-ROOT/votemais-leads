@@ -25,6 +25,7 @@ import {
   openChannel,
   pipelineBoard,
   registerContact,
+  registerReply,
   removeContact,
   toCsv,
   updateLead,
@@ -102,6 +103,12 @@ export async function leadRoutes(app: FastifyInstance) {
     );
     await registerContact(id, body, userId(req));
     return { ok: true };
+  });
+
+  app.post('/api/leads/:id/reply', async (req) => {
+    const { id } = parse(idParam, req.params);
+    const body = parse(z.object({ outcome: z.enum(['positive', 'neutral', 'negative']), note: z.string().max(2000).nullable().optional() }), req.body);
+    return registerReply(id, body, userId(req));
   });
 
   app.post('/api/leads/:id/messages', async (req) => {

@@ -174,11 +174,11 @@ function IntegrationCard({ it }: { it: Integration }) {
 export default function IntegrationsPage() {
   const q = useQuery({ queryKey: ['integrations'], queryFn: () => api.get<{ integrations: Integration[]; system: Health }>('/integrations') });
   const sys = q.data?.system;
-  const services: Array<[string, React.ComponentType<{ className?: string }>, { ok: boolean; detail?: string } | undefined, string]> = [
+  const services: Array<[string, React.ComponentType<{ className?: string }>, { ok: boolean; detail?: string } | undefined, string | null]> = [
     ['PostgreSQL', Database, sys?.database, 'DATABASE_URL'],
     ['Redis', Server, sys?.redis, 'REDIS_URL'],
     ['Workers (BullMQ)', Workflow, sys?.worker, 'processo worker'],
-    ['IA', Cpu, sys?.ai, 'integração Anthropic'],
+    ['IA', Cpu, sys?.ai, null],
   ];
   return (
     <>
@@ -199,7 +199,7 @@ export default function IntegrationsPage() {
                     {name}
                     {s ? <span className={`size-2 rounded-full ${s.ok ? 'bg-success' : 'bg-destructive'}`} /> : null}
                   </div>
-                  <div className="truncate text-[11px] text-muted-foreground">{s ? (s.ok ? `conectado · ${src}` : (s.detail ?? 'indisponível')) : '…'}</div>
+                  <div className="truncate text-[11px] text-muted-foreground">{s ? (s.ok ? (src ? `conectado · ${src}` : s.detail) : (s.detail ?? 'indisponível')) : '…'}</div>
                 </div>
               </div>
             ))}

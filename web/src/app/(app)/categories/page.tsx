@@ -15,8 +15,13 @@ import { api } from '@/lib/api';
 import { CATEGORY_GROUPS } from '@/lib/constants';
 import type { Category } from '@/lib/types';
 
-type Form = { id?: number; name: string; group: string; description: string; keywords: string; negativeKeywords: string; priority: number; isActive: boolean };
-const empty: Form = { name: '', group: 'beleza', description: '', keywords: '', negativeKeywords: '', priority: 5, isActive: true };
+type Form = { id?: number; name: string; group: string; description: string; keywords: string; negativeKeywords: string; priority: number; seasonMonths: number[]; isActive: boolean };
+const empty: Form = { name: '', group: 'beleza', description: '', keywords: '', negativeKeywords: '', priority: 5, seasonMonths: [], isActive: true };
+const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const now = new Date().getMonth() + 1;
+// espelha server/src/lib/season.ts: mês atual + 2 de antecedência
+const inSeason = (m: number[]) => m.some((x) => [0, 1, 2].some((i) => ((now - 1 + i) % 12) + 1 === x));
+const fmtMonths = (m: number[]) => [...m].sort((a, b) => a - b).map((x) => MONTHS[x - 1]).join(', ');
 const split = (v: string) => v.split(/\n|,/).map((s) => s.trim()).filter(Boolean);
 
 export default function CategoriesPage() {
@@ -27,7 +32,7 @@ export default function CategoriesPage() {
 
   const save = useMutation({
     mutationFn: (f: Form) => {
-      const body = { name: f.name, group: f.group, description: f.description || null, keywords: split(f.keywords), negativeKeywords: split(f.negativeKeywords), priority: f.priority, isActive: f.isActive };
+      const body = { name: f.name, group: f.group, description: f.description || null, keywords: split(f.keywords), negativeKeywords: split(f.negativeKeywords), priority: f.priority, seasonMonths: f.seasonMonths, isActive: f.isActive };
       return f.id ? api.put(`/categories/${f.id}`, body) : api.post('/categories', body);
     },
     onSuccess: () => {
@@ -54,7 +59,7 @@ export default function CategoriesPage() {
     <>
       <PageHeader
         title="Categorias e palavras-chave"
-        description="O planejador gera consultas a partir das palavras-chave de cada categoria ativa, alternando estados e regiões."
+        description="O planejador gera consultas a partir das palavras-chave de cada categoria ativa, alternando estados e regiões. Categorias em temporada recebem até metade de cada rodada."
         actions={
           <Button onClick={() => setForm(empty)}>
             <Plus /> Nova categoria
@@ -78,6 +83,12 @@ export default function CategoriesPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{c.name}</span>
                           <Badge variant="neutral">prioridade {c.priority}</Badge>
+                          {c.seasonMonths.length > 0 &&
+                            (inSeason(c.seasonMonths) ? (
+                              <Badge title={`Eventos em ${fmtMonths(c.seasonMonths)}`}>em temporada</Badge>
+                            ) : (
+                              <span className="text-[11px] text-muted-foreground">temporada: {fmtMonths(c.seasonMonths)}</span>
+                            ))}
                           <span className="text-[11px] text-muted-foreground tabular">{c.leads} leads</span>
                         </div>
                         <div className="mt-1 flex flex-wrap gap-1">
@@ -95,7 +106,7 @@ export default function CategoriesPage() {
                           variant="ghost"
                           size="icon-sm"
                           aria-label="Editar"
-                          onClick={() => setForm({ id: c.id, name: c.name, group: c.group, description: c.description ?? '', keywords: c.keywords.join('\n'), negativeKeywords: c.negativeKeywords.join('\n'), priority: c.priority, isActive: c.isActive })}
+                          onClick={() => setForm({ id: c.id, name: c.name, group: c.group, description: c.description ?? '', keywords: c.keywords.join('\n'), negativeKeywords: c.negativeKeywords.join('\n'), priority: c.priority, seasonMonths: c.seasonMonths, isActive: c.isActive })}
                         >
                           <Pencil />
                         </Button>
@@ -158,6 +169,24 @@ export default function CategoriesPage() {
                   </div>
                 </Field>
               </div>
+              <Field label="Meses dos eventos (temporada)" hint="Nesses meses e nos 2 anteriores a categoria ganha prioridade nas rodadas. Nenhum marcado = o ano todo.">
+                <div className="flex flex-wrap gap-1">
+                  {MONTHS.map((m, i) => {
+                    const on = form.seasonMonths.includes(i + 1);
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setForm({ ...form, seasonMonths: on ? form.seasonMonths.filter((x) => x !== i + 1) : [...form.seasonMonths, i + 1] })}
+                        className={`rounded-md border px-2 py-1 text-xs ${on ? 'border-primary bg-primary/15 text-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                      >
+                        {m}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
               <Field label="Descrição">
                 <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </Field>

@@ -14,6 +14,7 @@ import {
   leads,
   leadStage,
   organizers,
+  replyOutcome,
   type LeadStage,
 } from '../db/schema.js';
 import { badRequest, notFound } from '../lib/errors.js';
@@ -414,9 +415,55 @@ export async function changeStage(id: string, to: LeadStage, userId: string | nu
       if (['cliente', 'sem_interesse'].includes(to)) {
         await tx.update(followUps).set({ status: 'cancelled' }).where(and(eq(followUps.leadId, id), eq(followUps.status, 'pending')));
       }
+      const implied = STAGE_REPLY[to];
+      if (implied) await markReply(tx, id, implied, new Date());
     }
   });
   await recomputeNextFollowUp(id);
+}
+
+export type ReplyOutcome = (typeof replyOutcome.enumValues)[number];
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Mover o lead para estas etapas implica que o contato respondeu. */
+const STAGE_REPLY: Partial<Record<LeadStage, ReplyOutcome>> = { interessado: 'positive', negociacao: 'positive', cliente: 'positive', sem_interesse: 'negative' };
+
+/** Atribui a resposta à última mensagem enviada, se ela ainda não tiver resposta. Retorna o id da mensagem. */
+async function markReply(tx: Tx, leadId: string, outcome: ReplyOutcome, at: Date): Promise<string | null> {
+  const [msg] = await tx
+    .select({ id: generatedMessages.id, replied: generatedMessages.replyOutcome })
+    .from(generatedMessages)
+    .where(and(eq(generatedMessages.leadId, leadId), eq(generatedMessages.status, 'sent')))
+    .orderBy(desc(generatedMessages.sentAt))
+    .limit(1);
+  if (!msg || msg.replied) return null;
+  await tx.update(generatedMessages).set({ replyOutcome: outcome, repliedAt: at }).where(eq(generatedMessages.id, msg.id));
+  return msg.id;
+}
+
+const REPLY_LABEL: Record<ReplyOutcome, string> = { positive: 'Respondeu com interesse', neutral: 'Respondeu (neutro)', negative: 'Respondeu sem interesse' };
+const REPLY_STAGE: Record<ReplyOutcome, LeadStage | null> = { positive: 'interessado', neutral: null, negative: 'sem_interesse' };
+
+/** Registra a resposta do contato, mede a abordagem usada e avança a etapa quando faz sentido. */
+export async function registerReply(leadId: string, input: { outcome: ReplyOutcome; note?: string | null }, userId: string | null) {
+  const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
+  if (!lead) throw notFound('Lead');
+  const at = new Date();
+  const messageId = await db.transaction(async (tx) => {
+    const id = await markReply(tx, leadId, input.outcome, at);
+    await tx.insert(contactHistory).values({ leadId, userId, type: 'reply_received', content: input.note ? `${REPLY_LABEL[input.outcome]}: ${input.note}` : REPLY_LABEL[input.outcome], metadata: { outcome: input.outcome, messageId: id } });
+    // a resposta torna desnecessário o lembrete automático de "sem resposta"
+    await tx
+      .update(followUps)
+      .set({ status: 'cancelled' })
+      .where(and(eq(followUps.leadId, leadId), eq(followUps.status, 'pending'), eq(followUps.title, 'Retomar contato (sem resposta)')));
+    return id;
+  });
+  const next = REPLY_STAGE[input.outcome];
+  const order = leadStage.enumValues;
+  if (next && (next === 'sem_interesse' || order.indexOf(lead.stage) < order.indexOf(next))) await changeStage(leadId, next, userId, { note: input.note ?? null });
+  else await recomputeNextFollowUp(leadId);
+  return { messageId };
 }
 
 export const ACTION_TYPES = ['whatsapp_opened', 'instagram_opened', 'email_opened', 'website_opened'] as const;
@@ -491,7 +538,16 @@ export async function registerContact(leadId: string, input: { channel: 'whatsap
   if (!lead) throw notFound('Lead');
   const at = input.at ? new Date(input.at) : new Date();
   if (Number.isNaN(at.getTime()) || at.getTime() > Date.now() + 60_000) throw badRequest('Data de contato inválida');
-  if (input.messageId) await db.update(generatedMessages).set({ status: 'sent', sentAt: at }).where(and(eq(generatedMessages.id, input.messageId), eq(generatedMessages.leadId, leadId)));
+  // sem messageId (botão "Registrar contato"), a última mensagem aberta no WhatsApp é a que foi enviada
+  const [opened] = input.messageId
+    ? [{ id: input.messageId }]
+    : await db
+        .select({ id: generatedMessages.id })
+        .from(generatedMessages)
+        .where(and(eq(generatedMessages.leadId, leadId), eq(generatedMessages.status, 'opened')))
+        .orderBy(desc(generatedMessages.openedAt))
+        .limit(1);
+  if (opened) await db.update(generatedMessages).set({ status: 'sent', sentAt: at }).where(and(eq(generatedMessages.id, opened.id), eq(generatedMessages.leadId, leadId)));
   if (['novo', 'qualificado', 'aguardando_contato'].includes(lead.stage)) await changeStage(leadId, 'contatado', userId, { note: input.note ?? null });
   else await db.insert(contactHistory).values({ leadId, userId, type: 'contact_made', channel: input.channel, content: input.note ?? null });
   await db.update(leads).set({ lastContactAt: at }).where(eq(leads.id, leadId));

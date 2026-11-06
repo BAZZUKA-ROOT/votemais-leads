@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { GroundedExtraction } from '../src/ai/extraction.js';
 import { persistDiscovery } from '../src/services/discovery.js';
 import { login, type Client } from './api-client.js';
+import { DEFAULT_CATEGORIES } from '../src/db/seed-data.js';
 import { createAdmin, resetDb } from './helpers.js';
 
 function g(name: string, ig: string): GroundedExtraction {
@@ -51,13 +52,19 @@ describe('catálogo: eventos, organizadores, categorias, campanhas', () => {
   it('CRUD de categorias com palavras-chave', async () => {
     const list = await c.get('/api/categories');
     expect(list.status).toBe(200);
-    expect(list.body.length).toBe(32);
+    expect(list.body.length).toBe(DEFAULT_CATEGORIES.length);
     expect(list.body.find((x: any) => x.slug === 'rainha-da-expo').leads).toBe(2);
     const created = await c.send('POST', '/api/categories', { name: 'Rainha do Carnaval', group: 'municipal', keywords: ['Rainha do Carnaval'], priority: 7 });
     expect(created.status).toBe(200);
     expect(created.body.slug).toBe('rainha-do-carnaval');
     expect((await c.send('POST', '/api/categories', { name: 'Rainha do Carnaval', group: 'municipal', keywords: ['x'] })).status).toBe(400);
     expect((await c.send('PUT', `/api/categories/${created.body.id}`, { keywords: ['Rainha do Carnaval', 'Rei Momo'] })).body.keywords).toHaveLength(2);
+    const seasonal = await c.send('PUT', `/api/categories/${created.body.id}`, { seasonMonths: [1, 2], negativeKeywords: ['bloco'] });
+    expect(seasonal.body.seasonMonths).toEqual([1, 2]);
+    // atualização parcial não pode zerar campos com valor padrão
+    const toggled = await c.send('PUT', `/api/categories/${created.body.id}`, { isActive: false });
+    expect(toggled.body).toMatchObject({ isActive: false, priority: 7, seasonMonths: [1, 2], negativeKeywords: ['bloco'] });
+    expect(list.body.find((x: any) => x.slug === 'melhores-do-ano').seasonMonths).toEqual([11, 12, 1]);
     expect((await c.send('DELETE', `/api/categories/${created.body.id}`)).body.deleted).toBe(true);
     const used = list.body.find((x: any) => x.slug === 'rainha-da-expo');
     expect((await c.send('DELETE', `/api/categories/${used.id}`)).body).toMatchObject({ deleted: false, deactivated: true });

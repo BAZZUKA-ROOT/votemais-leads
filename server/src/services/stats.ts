@@ -86,6 +86,7 @@ export async function reportStats(from: string, to: string) {
   const categoryConversion = await rows<Record<string, number | string>>(sql`
     select coalesce(c.name, 'Sem categoria') as category, count(*)::int as total,
       count(*) filter (where l.last_contact_at is not null)::int as contacted,
+      count(*) filter (where exists (select 1 from generated_messages m where m.lead_id = l.id and m.reply_outcome is not null))::int as replied,
       count(*) filter (where l.stage in ('interessado','negociacao','cliente'))::int as interested,
       count(*) filter (where l.stage = 'cliente')::int as converted
     from leads l left join categories c on c.id = l.category_id where l.discovered_at ${range} group by 1 order by 2 desc`);
@@ -95,7 +96,15 @@ export async function reportStats(from: string, to: string) {
   const stageTransitions = await rows<Record<string, number | string>>(sql`
     select to_stage::text as stage, count(*)::int as total from contact_history
     where type = 'stage_change' and created_at ${range} group by 1 order by 2 desc`);
-  return { weekly, bySourceType, connectors, byRegion, categoryConversion, recurringOrganizers, stageTransitions };
+  const approaches = await rows<Record<string, number | string | null>>(sql`
+    select coalesce(approach, '—') as approach, kind::text as kind,
+      count(*)::int as sent,
+      count(*) filter (where reply_outcome is not null)::int as replied,
+      count(*) filter (where reply_outcome = 'positive')::int as positive,
+      count(*) filter (where reply_outcome = 'negative')::int as negative,
+      round(avg(extract(epoch from replied_at - sent_at) / 3600) filter (where replied_at is not null))::int as "avgReplyHours"
+    from generated_messages where status = 'sent' and sent_at ${range} group by 1, 2 order by 3 desc limit 30`);
+  return { weekly, bySourceType, connectors, byRegion, categoryConversion, recurringOrganizers, stageTransitions, approaches };
 }
 
 export async function controlStats() {

@@ -14,6 +14,7 @@ import {
   Link2,
   Mail,
   MessageCircle,
+  MessageSquareReply,
   Pencil,
   Phone,
   Plus,
@@ -96,6 +97,7 @@ export default function LeadDetailPage() {
   const [contactForm, setContactForm] = useState({ type: 'whatsapp', value: '', sourceUrl: '' });
   const [fuForm, setFuForm] = useState({ title: 'Retomar contato', dueAt: '' });
   const [contactAt, setContactAt] = useState(false);
+  const [replyOpen, setReplyOpen] = useState(false);
 
   const q = useQuery({ queryKey: ['lead', id], queryFn: () => api.get<LeadDetail>(`/leads/${id}`) });
   const cats = useQuery({ queryKey: ['categories'], queryFn: () => api.get<Category[]>('/categories'), staleTime: 300_000 });
@@ -118,6 +120,10 @@ export default function LeadDetailPage() {
     onSuccess: () => (setFuForm({ title: 'Retomar contato', dueAt: '' }), refresh(), qc.invalidateQueries({ queryKey: ['followups'] }), toast.success('Follow-up agendado')),
   });
   const fuStatus = useMutation({ mutationFn: ({ fid, status }: { fid: string; status: string }) => api.patch(`/followups/${fid}`, { status }), onSuccess: () => (refresh(), qc.invalidateQueries({ queryKey: ['followups'] })) });
+  const reply = useMutation({
+    mutationFn: (b: { outcome: ReplyOutcome; note: string | null }) => api.post(`/leads/${id}/reply`, b),
+    onSuccess: () => (setReplyOpen(false), refresh(), toast.success('Resposta registrada')),
+  });
   const contactMade = useMutation({ mutationFn: (at: string | null) => api.post(`/leads/${id}/contact-made`, { channel: 'whatsapp', at }), onSuccess: () => (setContactAt(false), refresh(), toast.success('Contato registrado')) });
   const remove = useMutation({ mutationFn: (suppress: boolean) => api.del(`/leads/${id}?suppress=${suppress}`), onSuccess: () => (qc.invalidateQueries({ queryKey: ['leads'] }), router.replace('/leads')) });
 
@@ -206,6 +212,11 @@ export default function LeadDetailPage() {
           <Button variant="outline" onClick={() => setContactAt(true)}>
             <Check /> Registrar contato
           </Button>
+          {lead.lastContactAt && (
+            <Button variant="outline" onClick={() => setReplyOpen(true)}>
+              <MessageSquareReply /> Registrar resposta
+            </Button>
+          )}
         </div>
       </div>
 
@@ -608,8 +619,55 @@ export default function LeadDetailPage() {
           <ContactAtForm onSubmit={(at) => contactMade.mutate(at)} loading={contactMade.isPending} />
         </DialogContent>
       </Dialog>
+      <Dialog open={replyOpen} onOpenChange={setReplyOpen}>
+        <DialogContent title="Registrar resposta" description="Mede qual abordagem funciona melhor (Relatórios) e avança a etapa do lead.">
+          <ReplyForm onSubmit={(b) => reply.mutate(b)} loading={reply.isPending} />
+        </DialogContent>
+      </Dialog>
       {dialog}
     </>
+  );
+}
+
+type ReplyOutcome = 'positive' | 'neutral' | 'negative';
+const REPLY_OPTIONS: Array<{ id: ReplyOutcome; label: string; hint: string }> = [
+  { id: 'positive', label: 'Com interesse', hint: 'move para Interessado' },
+  { id: 'neutral', label: 'Neutra / dúvida', hint: 'mantém a etapa' },
+  { id: 'negative', label: 'Sem interesse', hint: 'move para Sem interesse' },
+];
+
+function ReplyForm({ onSubmit, loading }: { onSubmit: (b: { outcome: ReplyOutcome; note: string | null }) => void; loading: boolean }) {
+  const [outcome, setOutcome] = useState<ReplyOutcome>('positive');
+  const [note, setNote] = useState('');
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit({ outcome, note: note.trim() || null });
+      }}
+    >
+      <div className="grid gap-2 sm:grid-cols-3">
+        {REPLY_OPTIONS.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => setOutcome(o.id)}
+            className={`rounded-lg border p-3 text-left text-[13px] transition-colors ${outcome === o.id ? 'border-primary bg-primary/10' : 'hover:bg-muted'}`}
+          >
+            <div className="font-medium">{o.label}</div>
+            <div className="text-[11px] text-muted-foreground">{o.hint}</div>
+          </button>
+        ))}
+      </div>
+      <Field label="O que a pessoa disse (opcional)" className="mt-3">
+        <Textarea rows={3} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <DialogFooter>
+        <Button type="submit" loading={loading}>
+          Registrar
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }
 

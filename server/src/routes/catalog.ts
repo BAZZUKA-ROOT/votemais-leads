@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { idParam, intIdParam, parse } from '../api/plugins.js';
+import { idParam, intIdParam, parse, parsePatch } from '../api/plugins.js';
 import { db } from '../db/client.js';
 import { campaigns, categories, contacts, events, leads, organizers } from '../db/schema.js';
 import { badRequest, notFound } from '../lib/errors.js';
@@ -19,6 +19,7 @@ const categorySchema = z.object({
   keywords: z.array(z.string().min(2).max(120)).max(30),
   negativeKeywords: z.array(z.string().min(2).max(120)).max(30).default([]),
   priority: z.number().int().min(1).max(10).default(5),
+  seasonMonths: z.array(z.number().int().min(1).max(12)).max(12).default([]),
   isActive: z.boolean().default(true),
 });
 
@@ -184,6 +185,7 @@ export async function catalogRoutes(app: FastifyInstance) {
         keywords: categories.keywords,
         negativeKeywords: categories.negativeKeywords,
         priority: categories.priority,
+        seasonMonths: categories.seasonMonths,
         isActive: categories.isActive,
         leads: sql<number>`(select count(*) from leads l where l.category_id = "categories"."id")::int`,
       })
@@ -201,7 +203,7 @@ export async function catalogRoutes(app: FastifyInstance) {
 
   app.put('/api/categories/:id', async (req) => {
     const { id } = parse(intIdParam, req.params);
-    const body = parse(categorySchema.partial(), req.body);
+    const body = parsePatch(categorySchema, req.body);
     const [row] = await db.update(categories).set(body).where(eq(categories.id, id)).returning();
     if (!row) throw notFound('Categoria');
     return row;
@@ -242,7 +244,7 @@ export async function catalogRoutes(app: FastifyInstance) {
   });
   app.put('/api/campaigns/:id', async (req) => {
     const { id } = parse(intIdParam, req.params);
-    const [row] = await db.update(campaigns).set(parse(campaignSchema.partial(), req.body)).where(eq(campaigns.id, id)).returning();
+    const [row] = await db.update(campaigns).set(parsePatch(campaignSchema, req.body)).where(eq(campaigns.id, id)).returning();
     if (!row) throw notFound('Campanha');
     return row;
   });

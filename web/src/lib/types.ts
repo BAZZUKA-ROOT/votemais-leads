@@ -43,6 +43,7 @@ export interface Category {
   keywords: string[];
   negativeKeywords: string[];
   priority: number;
+  seasonMonths: number[];
   isActive: boolean;
   leads: number;
 }

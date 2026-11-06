@@ -13,6 +13,9 @@
 # busca gratuita (SearXNG) e dispara a primeira rodada de pesquisa.
 # Pode ser executado de novo para atualizar (mantém .env e dados).
 # =============================================================================
+# Bloco único: o bash lê o script inteiro antes de executar, e comandos como
+# "docker compose exec" não consomem o restante dele no modo "curl | bash".
+{
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/BAZZUKA-ROOT/votemais-leads.git}"
@@ -245,3 +248,4 @@ elif [ -z "${DOMAIN:-}" ]; then
   echo " Sem domínio: acesso por HTTP no IP. Para HTTPS, crie o registro A (leads.votemais.online → $PUBLIC_IP)"
   echo " e rode: sudo bash $DIR/deploy/install.sh --domain leads.votemais.online"
 fi
+} </dev/null

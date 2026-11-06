@@ -21,6 +21,13 @@ export function parse<S extends z.ZodType>(schema: S, data: unknown): z.infer<S>
   return schema.parse(data);
 }
 
+/** Atualização parcial: no Zod 4, `.partial()` ainda aplica `.default()`; mantém só os campos enviados. */
+export function parsePatch<T extends z.ZodRawShape>(schema: z.ZodObject<T>, data: unknown): Partial<z.infer<z.ZodObject<T>>> {
+  const parsed = schema.partial().parse(data) as Record<string, unknown>;
+  const sent = data && typeof data === 'object' ? data : {};
+  return Object.fromEntries(Object.entries(parsed).filter(([k]) => k in sent)) as Partial<z.infer<z.ZodObject<T>>>;
+}
+
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const PUBLIC = new Set(['/api/auth/login', '/api/health']);
 
