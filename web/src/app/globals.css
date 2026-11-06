@@ -150,6 +150,8 @@
     color: var(--color-foreground);
     font-feature-settings: 'cv11', 'ss01';
     -webkit-font-smoothing: antialiased;
+    /* palavras/links longos quebram em vez de alargar a página */
+    overflow-wrap: break-word;
   }
   ::selection {
     background: color-mix(in oklch, var(--color-primary) 25%, transparent);

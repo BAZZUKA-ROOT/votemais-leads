@@ -77,7 +77,7 @@ export default function MessagesPage() {
                 <StageBadge stage={m.stage} />
               </div>
             </div>
-            <p className="flex-1 whitespace-pre-wrap rounded-lg bg-subtle p-3 text-[13px] leading-relaxed">{m.editedContent ?? m.content}</p>
+            <p className="flex-1 whitespace-pre-wrap break-words rounded-lg bg-subtle p-3 text-[13px] leading-relaxed">{m.editedContent ?? m.content}</p>
             <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
               <span>{m.kind === 'initial' ? 'Primeiro contato' : 'Follow-up'} · {fmtDateTime(m.createdAt)}</span>
               <div className="ml-auto flex gap-1.5">
