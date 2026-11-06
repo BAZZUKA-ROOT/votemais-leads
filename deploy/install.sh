@@ -25,6 +25,7 @@ OLLAMA_MODEL="${OLLAMA_MODEL:-qwen2.5:7b}"
 SKIP_DOCKER_INSTALL="${SKIP_DOCKER_INSTALL:-0}"
 SKIP_FIREWALL="${SKIP_FIREWALL:-0}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
+FORCE_BUILD="${FORCE_BUILD:-0}"
 HTTP_PORT="${HTTP_PORT:-80}"
 
 while [ $# -gt 0 ]; do
@@ -33,6 +34,7 @@ while [ $# -gt 0 ]; do
     --domain) DOMAIN="$2"; shift 2 ;;
     --ollama) OLLAMA=1; shift ;;
     --cloudflare-token) CF_TOKEN="$2"; shift 2 ;;
+    --build) FORCE_BUILD=1; shift ;;
     --dir) DIR="$2"; shift 2 ;;
     -h|--help) sed -n 2,13p "$0"; exit 0 ;;
     *) echo "Opção desconhecida: $1" >&2; exit 1 ;;
@@ -113,6 +115,7 @@ HTTP_PORT=$HTTP_PORT
 CADDYFILE=./deploy/caddy/Caddyfile.generated
 CLOUDFLARE_TUNNEL_TOKEN=$CF_TOKEN
 COMPOSE_PROFILES=searxng$([ "$OLLAMA" = "1" ] && echo ",ollama")$([ -n "$CF_TOKEN" ] && echo ",cloudflare")
+$( [ "$MEM_MB" -lt 2500 ] && printf 'NODE_OPTIONS=--max-old-space-size=200\nPG_SHARED_BUFFERS=48MB\nPG_MAX_CONNECTIONS=30\nDB_POOL_MAX=4\n' )
 EOF
   chmod 600 .env
   FIRST_INSTALL=1
@@ -173,8 +176,12 @@ fi
 
 # ---------------------------------------------------------------- subir
 if [ "$SKIP_BUILD" != "1" ]; then
-  log "Construindo imagens (primeira vez leva alguns minutos)"
-  docker compose build
+  if [ "$FORCE_BUILD" != "1" ] && docker compose pull -q migrate web >/dev/null 2>&1; then
+    log "Imagens prontas baixadas (ghcr.io)"
+  else
+    log "Construindo imagens (primeira vez leva alguns minutos)"
+    docker compose build
+  fi
 fi
 log "Subindo serviços"
 docker compose up -d
