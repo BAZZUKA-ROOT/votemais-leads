@@ -177,6 +177,27 @@ describe('gestão de leads, filtros, pipeline e WhatsApp', () => {
     expect((await c.send('POST', `/api/leads/${leadA}/reply`, { outcome: 'talvez' })).status).toBe(400);
   });
 
+  it('número sem WhatsApp deixa de ser sugerido; Instagram Direct abre com a mensagem', async () => {
+    const before = (await db.select().from(leads).where(eq(leads.id, leadA)))[0]!;
+    expect(before.primaryWhatsapp).toBe('5517998887777');
+    const r = await c.send('POST', `/api/leads/${leadA}/no-whatsapp`, {});
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ primaryWhatsapp: null, primaryPhone: null, primaryInstagram: 'rodeiobarretos' });
+    expect((await c.send('POST', `/api/leads/${leadA}/open`, { channel: 'whatsapp', text: 'Olá! Tudo bem?' })).status).toBe(400);
+    // reencontrar o número na mesma fonte não o reativa
+    await persistDiscovery(grounded('Rainha do Rodeio de Barretos 2027', 'SP', { phone: '5517998887777', ig: 'rodeiobarretos', org: 'Barretos Produções' }), ctx('https://a.com.br'));
+    expect((await db.select().from(leads).where(eq(leads.id, leadA)))[0]!.primaryWhatsapp).toBeNull();
+
+    const ig = await c.send('POST', `/api/leads/${leadA}/open`, { channel: 'instagram', text: 'Olá! Vi o concurso Rainha do Rodeio de Barretos.' });
+    expect(ig.body.url).toBe('https://ig.me/m/rodeiobarretos');
+    expect((await c.send('POST', `/api/leads/${leadA}/open`, { channel: 'instagram' })).body.url).toBe('https://www.instagram.com/rodeiobarretos/');
+    expect((await db.select().from(leads).where(eq(leads.id, leadA)))[0]!.stage).toBe('aguardando_contato');
+    expect((await c.send('POST', `/api/leads/${leadA}/contact-made`, { channel: 'instagram' })).status).toBe(200);
+    const hist = await db.select().from(contactHistory).where(eq(contactHistory.leadId, leadA));
+    expect(hist.some((h) => h.type === 'contact_made' && h.channel === 'instagram')).toBe(true);
+    expect(hist.some((h) => h.type === 'edited' && h.content?.includes('sem WhatsApp'))).toBe(true);
+  });
+
   it('follow-ups: criar, concluir e listar vencidos', async () => {
     const past = new Date(Date.now() - 60_000).toISOString();
     const r = await c.send('POST', '/api/followups', { leadId: leadB, dueAt: past, title: 'Ligar' });
